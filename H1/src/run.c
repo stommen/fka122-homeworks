@@ -107,7 +107,7 @@ run(
     char filename[50];
     sprintf(filename, "data/task_3/data_%.3f_%i_%i.csv", delta_t, its, its_eq);
     FILE *fp = fopen(filename, "w");
-    fprintf(fp, "its, t_max, delta_t, its_eq\n%i, %i, %f, %i\n", its, t_max, delta_t, its_eq);
+    fprintf(fp, "its, t_max, delta_t, its_eq, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0);
     fprintf(fp, "E_kin, E_pot, E_tot, <T>, T, <P>, P, a\n");
 
     sprintf(filename, "data/task_3/trajs_%.3f_%i_%i.csv", delta_t, its, its_eq);
@@ -178,21 +178,18 @@ verlet(double **positions, double **velocities, double **forces, int its, int it
         }
 
         T[i] = 2.0 / 3.0 / k_B / N * E_kin;
+        T[0] = 0.1;
         T_avg = average(T, i+1);
+        P[i] = 1 / (3 * 64 * pow(a_0, 3) * alpha_P) * (E_kin + virial);
+        P_avg = average(P, i+1);
         if (i < its_eq){
             a_0 = a_0 * pow(alpha_P, 1. / 3.);
-            T[0] = 0.1;
-            P[i] = 1 / (3 * 64 * pow(a_0, 3) * alpha_P) * (E_kin + virial);
-            P_avg = average(P, i+1);
 
             alpha_T = 1 + 2 * delta_t * (T_eq - T[i]) / (T[i] * tau_T);
             alpha_P = 1 - beta * delta_t * (P_eq - P[i]) / tau_P;
         }
 
-        if (fp != NULL && i >= its_eq){
-            fprintf(fp, "%f, %f, %f, %f, %f\n", E_kin, E_pot, E_kin + E_pot, T_avg, a_0);
-        }
-        else if (fp != NULL && i < its_eq){
+        if (fp != NULL){
             fprintf(fp, "%f, %f, %f, %f, %f, %f, %f, %f\n", E_kin, E_pot, E_kin + E_pot, T_avg, T[i], P_avg, P[i], a_0);
         }
         if (fp_traj != NULL){
