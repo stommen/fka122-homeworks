@@ -11,7 +11,7 @@
 void calculate(double *potential, double *virial, double **force,
            double **position, double cell_length, int nbr_atoms);
 gsl_rng *init_gsl_rng(int seed);
-void verlet(double **positions, double **velocities, double **forces, int its, int its_eq,
+double verlet(double **positions, double **velocities, double **forces, int its, int its_eq,
             double delta_t, double m, double k_B, double a_0, double beta, int N, 
             int cell_length, double T_eq, double P_eq, FILE *fp, FILE *fp_traj);
 
@@ -27,7 +27,7 @@ run(
     }
     // ******************************** Constants ********************************* //
     int N = 256; // Number of atoms
-    int cell_length = 4; // Number of atoms in each direction
+    int cell_length = 4; // Number of unit cells in each direction
     double k_B = 8.617333262145 * 1e-5; // Boltzmann constant [eV/K]
     double m = 27.0 / 9649; // Aluminium mass [eV ps²/Å²]
     double beta = 1. / (76e3); // Bulk Modulus inverse [1 / MPa]
@@ -59,7 +59,7 @@ run(
 
     // ********************** Initialize Task 2 & 3 & 4 ************************** //
     
-    int t_max = 25; // [ps]
+    int t_max = 50; // [ps]
     const double delta_t = atof(argv[1]);
     int its = (int)(t_max / delta_t);
 
@@ -77,7 +77,7 @@ run(
     // Initialize the random number generator
     gsl_rng *r = init_gsl_rng(42);
 
-    double a_0 = 4.05;
+    double a_0 = 4.03; // Lattice constant at 0 K [Å]
     init_fcc(positions, 4, a_0);
     for (int i = 0; i < N; i++)
         {   
@@ -96,63 +96,69 @@ run(
     // fprintf(fp, "its, t_max, delta_t, its_eq, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0);
     // fprintf(fp, "E_kin [eV], E_pot [eV], E_tot [eV], <T> [K], T [K], <P> [MPa], P [MPa], a [Å]\n");
 
-    // verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, 0., 0., fp, NULL);
+    // a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, 0., 0., fp, NULL);
 
     // ********************************* Task 3 ********************************** //
 
-    double T_eq = 500. + 273.15; // [K]
-    double P_eq = 0.1; // [MPa]
-    int its_eq = 25000;
+    // double T_eq = 500. + 273.15; // [K]
+    // double P_eq = 0.1; // [MPa]
+    // int its_eq = 25000;
 
-    // Format the filename with delta_t
-    char filename[50];
-    sprintf(filename, "data/task_3/data_%.3f_%i_%i.csv", delta_t, its, its_eq);
-    FILE *fp = fopen(filename, "w");
-    fprintf(fp, "its, t_max, delta_t, its_eq, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0);
-    fprintf(fp, "E_kin [eV], E_pot [eV], E_tot [eV], <T> [K], T [K], <P> [MPa], P [MPa], a [Å]\n");
+    // // Format the filename with delta_t
+    // char filename[50];
+    // sprintf(filename, "data/task_3/data_%.3f_%i_%i.csv", delta_t, its, its_eq);
+    // FILE *fp = fopen(filename, "w");
+    // fprintf(fp, "its, t_max, delta_t, its_eq, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0);
+    // fprintf(fp, "E_kin [eV], E_pot [eV], E_tot [eV], <T> [K], T [K], <P> [MPa], P [MPa], a [Å]\n");
 
     // sprintf(filename, "data/task_3/trajs_%.3f_%i_%i.csv", delta_t, its, its_eq);
     // FILE *fp_traj = fopen(filename, "w");
     // fprintf(fp_traj, "its, t_max, delta_t, its_eq, -, -, -, -, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0, 0, 0, 0, 0);
     // fprintf(fp_traj, "x_1, y_1, z_1, x_2, y_2, z_2, x_3, y_3, z_3, x_4, y_4, z_4\n");
-    verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, fp, NULL);
-    // printf("%f, %f, %f\n", positions[0][0], positions[0][1], positions[0][2]);
 
-    its_eq = 0;
-    t_max = 15;
-    its = (int)(t_max / delta_t);
-
-    a_0 = 4.048232;
-    verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, fp, NULL);
+    // a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, fp, fp_traj);
 
     // ********************************* Task 4 ********************************** //
 
-    // int its_eq = 20000;
-    // double T_eq = 900. + 273.15; // [K]
-    // double P_eq = 0.1; // [MPa]
+    int its_eq = 50000;
+    double T_eq = 900. + 273.15; // [K]
+    double P_eq = 0.1; // [MPa]
 
-    // char filename[50];
-    // sprintf(filename, "data/task_4/trajs_%.3f_%i_%i.csv", delta_t, its, its_eq);
-    // FILE *fp_1 = fopen(filename, "w");
-    // fprintf(fp_1, "its, t_max, delta_t, its_eq, -, -, -, -, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0, 0, 0, 0, 0);
-    // fprintf(fp_1, "x_1, y_1, z_1, x_2, y_2, z_2, x_3, y_3, z_3, x_4, y_4, z_4\n");
+    char filename[50];
+    sprintf(filename, "data/task_4/trajs_%.3f_%i_%i.csv", delta_t, its, its_eq);
+    FILE *fp_1 = fopen(filename, "w");
+    fprintf(fp_1, "its, t_max, delta_t, its_eq, -, -, -, -, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0, 0, 0, 0, 0);
+    fprintf(fp_1, "x_1, y_1, z_1, x_2, y_2, z_2, x_3, y_3, z_3, x_4, y_4, z_4\n");
 
-    // verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, T_eq, P_eq, NULL, fp_1);
+    sprintf(filename, "data/task_4/data_%.3f_%i_%i.csv", delta_t, its, its_eq);
+    FILE *fp_2 = fopen(filename, "w");
+    fprintf(fp_2, "its, t_max, delta_t, its_eq, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0);
+    fprintf(fp_2, "E_kin [eV], E_pot [eV], E_tot [eV], <T> [K], T [K], <P> [MPa], P [MPa], a [Å]\n");
 
-    // t_max = 40; // [ps]
-    // its = (int)(t_max / delta_t);
-    // its_eq = 25000;
-    // T_eq = 700. + 273.15; // [K]
+    a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, fp_2, fp_1);
 
-    // sprintf(filename, "data/task_4/trajs_%.3f_%i_%i.csv", delta_t, its, its_eq);
-    // FILE *fp_2 = fopen(filename, "w");
-    // fprintf(fp_2, "its, t_max [ps], delta_t [ps], its_eq, T_eq [K], P_eq [MPa], -, -, -, -, -, -\n%i, %i, %f, %i, %f, %f, %i, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, T_eq, P_eq, 0, 0, 0, 0, 0, 0);
-    // fprintf(fp_2, "x_1, y_1, z_1, x_2, y_2, z_2, x_3, y_3, z_3, x_4, y_4, z_4\n");
+    t_max = 50; // [ps]
+    its = (int)(t_max / delta_t);
+    its_eq = 30000;
+    T_eq = 700. + 273.15; // [K]
 
-    // verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, T_eq, P_eq, NULL, fp_2);
+    sprintf(filename, "data/task_4/data_%.3f_%i_%i.csv", delta_t, its, its_eq);
+    FILE *fp_3 = fopen(filename, "w");
+    fprintf(fp_3, "its, t_max, delta_t, its_eq, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0);
+    fprintf(fp_3, "E_kin [eV], E_pot [eV], E_tot [eV], <T> [K], T [K], <P> [MPa], P [MPa], a [Å]\n");
 
-    // fclose(fp_1);
-    fclose(fp);
+    sprintf(filename, "data/task_4/trajs_%.3f_%i_%i.csv", delta_t, its, its_eq);
+    FILE *fp_4 = fopen(filename, "w");
+    fprintf(fp_4, "its, t_max [ps], delta_t [ps], its_eq, T_eq [K], P_eq [MPa], -, -, -, -, -, -\n%i, %i, %f, %i, %f, %f, %i, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, T_eq, P_eq, 0, 0, 0, 0, 0, 0);
+    fprintf(fp_4, "x_1, y_1, z_1, x_2, y_2, z_2, x_3, y_3, z_3, x_4, y_4, z_4\n");
+    
+    printf("a_0: %f\n", a_0);
+    a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, fp_3, fp_4);
+
+    fclose(fp_1);
+    fclose(fp_2);
+    fclose(fp_3);
+    fclose(fp_4);
     gsl_rng_free(r);
     destroy_2D_array(positions);
     destroy_2D_array(forces);
@@ -179,7 +185,7 @@ init_gsl_rng(int seed){
     return r;
 }
 
-void 
+double
 verlet(double **positions, double **velocities, double **forces, int its, int its_eq, 
             double delta_t, double m, double k_B, double beta, double a_0, int N, 
             int cell_length, double T_eq, double P_eq, FILE *fp, FILE *fp_traj)
@@ -187,68 +193,69 @@ verlet(double **positions, double **velocities, double **forces, int its, int it
     double tau_T = delta_t * 200;
     double tau_P = delta_t * 1000;
     double alpha_T;
-    double alpha_P = 1.;
+    double alpha_P;
     double E_pot = 0.0;
+    double E_kin = 0.0;
     double virial = 0.0;
     double *P = malloc(its * sizeof(double));
     double *T = malloc(its * sizeof(double));
     double T_avg = 0.0;
     double P_avg = 0.0;
-    calculate(&E_pot, &virial, forces, positions, a_0 * cell_length, N);
 
+    calculate(&E_pot, &virial, forces, positions, a_0 * cell_length, N);
     for (unsigned int i = 0; i < its; i++)
     {   
-        double E_kin = 0.0;
+        E_kin = 0.0;
         // Perform the first half step
         for (unsigned int j = 0; j < N; j++)
         {
-            E_kin += 0.5 * m * vector_norm(velocities[j], 3) * vector_norm(velocities[j], 3);
             for (unsigned int k = 0; k < 3; k++)
             {
                 velocities[j][k] += 0.5 * delta_t * forces[j][k] / m;
                 positions[j][k] += delta_t * velocities[j][k];
             }
         }
+        // Calculate new accelerations
+        calculate(&E_pot, &virial, forces, positions, a_0 * cell_length, N);
+        // Perform the second half step
+        for (unsigned int j = 0; j < N; j++)
+        {
+            for (unsigned int k = 0; k < 3; k++)
+            {
+                velocities[j][k] += 0.5 * delta_t * forces[j][k] / m;
+            }
+            E_kin += 0.5 * m * vector_norm(velocities[j], 3) * vector_norm(velocities[j], 3);
+        }
 
-        T[i] = 2.0 / 3.0 / k_B / N * E_kin; // [K]
+        T[i] = 2.0 / 3.0 / k_B / N * E_kin;
         T_avg = average(T, i+1);
-        P[i] = 1 / (3 * 64 * pow(a_0, 3) * alpha_P) * (E_kin + virial) / 6.2415 * 1e6; // [MPa]
+        P[i] = 1 / (3 * 64 * pow(a_0, 3)) * (E_kin + virial) / 6.2415 * 1e6; // [MPa]
         P_avg = average(P, i+1);
         if (i < its_eq){
-            a_0 = a_0 * pow(alpha_P, 1. / 3.);
-            T[0] = 0.1;
-
             alpha_T = 1 + 2 * delta_t * (T_eq - T[i]) / (T[i] * tau_T);
             alpha_P = 1 - beta * delta_t * (P_eq - P[i]) / tau_P;
+            a_0 = a_0 * pow(alpha_P, 1. / 3.);
+
+            for (unsigned int j = 0; j < N; j++)
+            {
+                multiplication_with_constant(positions[j], positions[j], pow(alpha_P, 1. / 3.), 3);
+                multiplication_with_constant(velocities[j], velocities[j], sqrt(alpha_T), 3);
+            }
         }
 
         if (fp != NULL){
             fprintf(fp, "%f, %f, %f, %f, %f, %f, %f, %f\n", E_kin, E_pot, E_kin + E_pot, T_avg, T[i], P_avg, P[i], a_0);
         }
         if (fp_traj != NULL){
-            fprintf(fp_traj, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", 
-                            positions[0][0], positions[0][1], positions[0][2],
+            fprintf(fp_traj, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n",
                             positions[15][0], positions[15][1], positions[15][2], 
                             positions[27][0], positions[27][1], positions[27][2], 
-                            positions[35][0], positions[35][1], positions[35][2]);
-        }
-
-        // Calculate new accelerations
-        calculate(&E_pot, &virial, forces, positions, a_0 * cell_length, N);
-
-        // Perform the second half step
-        for (unsigned int i = 0; i < N; i++)
-        {
-            for (unsigned int j = 0; j < 3; j++)
-            {
-                velocities[i][j] += 0.5 * delta_t * forces[i][j] / m;
-            }
-            if (i < its_eq){
-                multiplication_with_constant(positions[i], positions[i], pow(alpha_P, 1. / 3.), 3);
-                multiplication_with_constant(velocities[i], velocities[i], sqrt(alpha_T), 3);
-            }
+                            positions[35][0], positions[35][1], positions[35][2],
+                            positions[49][0], positions[49][1], positions[49][2]);
         }
     }
     free(T);
     free(P);
+
+    return a_0;
 }
