@@ -13,13 +13,13 @@ void calculate(double *potential, double *virial, double **force,
 gsl_rng *init_gsl_rng(int seed);
 double verlet(double **positions, double **velocities, double **forces, int its, int its_eq,
             double delta_t, double m, double k_B, double a_0, double beta, int N, 
-            int cell_length, double T_eq, double P_eq, FILE *fp, FILE *fp_traj);
+            int cell_length, double T_eq, double P_eq, FILE *fp, FILE *fp_traj, FILE *fp_rdist);
+void radial_dist(double *bins, double **positions, int N_bins, double bin_width, int N, double L);
+double boundary_distance_between_vectors(double *v1, double *v2, int dim, double box_length);
+void normalize_bins(double *bins, int N_bins, double bin_width, int N, double V);
 
 int
-run(
-    int argc,
-    char *argv[]
-   )
+run(int argc, char *argv[])
 {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <delta_t>\n", argv[0]);
@@ -59,7 +59,7 @@ run(
 
     // ********************** Initialize Task 2 & 3 & 4 ************************** //
     
-    int t_max = 50; // [ps]
+    int t_max = 20; // [ps]
     const double delta_t = atof(argv[1]);
     int its = (int)(t_max / delta_t);
 
@@ -100,12 +100,12 @@ run(
 
     // ********************************* Task 3 ********************************** //
 
-    // double T_eq = 500. + 273.15; // [K]
-    // double P_eq = 0.1; // [MPa]
-    // int its_eq = 25000;
+    double T_eq = 500. + 273.15; // [K]
+    double P_eq = 0.1; // [MPa]
+    int its_eq = 10000;
 
-    // // Format the filename with delta_t
-    // char filename[50];
+    // Format the filename with delta_t
+    char filename[50];
     // sprintf(filename, "data/task_3/data_%.3f_%i_%i.csv", delta_t, its, its_eq);
     // FILE *fp = fopen(filename, "w");
     // fprintf(fp, "its, t_max, delta_t, its_eq, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0);
@@ -116,49 +116,52 @@ run(
     // fprintf(fp_traj, "its, t_max, delta_t, its_eq, -, -, -, -, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0, 0, 0, 0, 0);
     // fprintf(fp_traj, "x_1, y_1, z_1, x_2, y_2, z_2, x_3, y_3, z_3, x_4, y_4, z_4\n");
 
-    // a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, fp, fp_traj);
+    sprintf(filename, "data/task_3/rdist_%.3f_%i_%i.csv", delta_t, its, its_eq);
+    FILE *fp_rdist = fopen(filename, "w");
+
+    a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, NULL, NULL, fp_rdist);
 
     // ********************************* Task 4 ********************************** //
 
-    int its_eq = 50000;
-    double T_eq = 900. + 273.15; // [K]
-    double P_eq = 0.1; // [MPa]
+    // int its_eq = 50000;
+    // double T_eq = 900. + 273.15; // [K]
+    // double P_eq = 0.1; // [MPa]
 
-    char filename[50];
-    sprintf(filename, "data/task_4/trajs_%.3f_%i_%i.csv", delta_t, its, its_eq);
-    FILE *fp_1 = fopen(filename, "w");
-    fprintf(fp_1, "its, t_max, delta_t, its_eq, -, -, -, -, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0, 0, 0, 0, 0);
-    fprintf(fp_1, "x_1, y_1, z_1, x_2, y_2, z_2, x_3, y_3, z_3, x_4, y_4, z_4\n");
+    // char filename[50];
+    // sprintf(filename, "data/task_4/trajs_%.3f_%i_%i.csv", delta_t, its, its_eq);
+    // FILE *fp_1 = fopen(filename, "w");
+    // fprintf(fp_1, "its, t_max, delta_t, its_eq, -, -, -, -, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0, 0, 0, 0, 0);
+    // fprintf(fp_1, "x_1, y_1, z_1, x_2, y_2, z_2, x_3, y_3, z_3, x_4, y_4, z_4\n");
 
-    sprintf(filename, "data/task_4/data_%.3f_%i_%i.csv", delta_t, its, its_eq);
-    FILE *fp_2 = fopen(filename, "w");
-    fprintf(fp_2, "its, t_max, delta_t, its_eq, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0);
-    fprintf(fp_2, "E_kin [eV], E_pot [eV], E_tot [eV], <T> [K], T [K], <P> [MPa], P [MPa], a [Å]\n");
+    // sprintf(filename, "data/task_4/data_%.3f_%i_%i.csv", delta_t, its, its_eq);
+    // FILE *fp_2 = fopen(filename, "w");
+    // fprintf(fp_2, "its, t_max, delta_t, its_eq, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0);
+    // fprintf(fp_2, "E_kin [eV], E_pot [eV], E_tot [eV], <T> [K], T [K], <P> [MPa], P [MPa], a [Å]\n");
 
-    a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, fp_2, fp_1);
+    // a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, fp_2, fp_1);
 
-    t_max = 50; // [ps]
-    its = (int)(t_max / delta_t);
-    its_eq = 30000;
-    T_eq = 700. + 273.15; // [K]
+    // t_max = 50; // [ps]
+    // its = (int)(t_max / delta_t);
+    // its_eq = 30000;
+    // T_eq = 700. + 273.15; // [K]
 
-    sprintf(filename, "data/task_4/data_%.3f_%i_%i.csv", delta_t, its, its_eq);
-    FILE *fp_3 = fopen(filename, "w");
-    fprintf(fp_3, "its, t_max, delta_t, its_eq, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0);
-    fprintf(fp_3, "E_kin [eV], E_pot [eV], E_tot [eV], <T> [K], T [K], <P> [MPa], P [MPa], a [Å]\n");
+    // sprintf(filename, "data/task_4/data_%.3f_%i_%i.csv", delta_t, its, its_eq);
+    // FILE *fp_3 = fopen(filename, "w");
+    // fprintf(fp_3, "its, t_max, delta_t, its_eq, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0);
+    // fprintf(fp_3, "E_kin [eV], E_pot [eV], E_tot [eV], <T> [K], T [K], <P> [MPa], P [MPa], a [Å]\n");
 
-    sprintf(filename, "data/task_4/trajs_%.3f_%i_%i.csv", delta_t, its, its_eq);
-    FILE *fp_4 = fopen(filename, "w");
-    fprintf(fp_4, "its, t_max [ps], delta_t [ps], its_eq, T_eq [K], P_eq [MPa], -, -, -, -, -, -\n%i, %i, %f, %i, %f, %f, %i, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, T_eq, P_eq, 0, 0, 0, 0, 0, 0);
-    fprintf(fp_4, "x_1, y_1, z_1, x_2, y_2, z_2, x_3, y_3, z_3, x_4, y_4, z_4\n");
+    // sprintf(filename, "data/task_4/trajs_%.3f_%i_%i.csv", delta_t, its, its_eq);
+    // FILE *fp_4 = fopen(filename, "w");
+    // fprintf(fp_4, "its, t_max [ps], delta_t [ps], its_eq, T_eq [K], P_eq [MPa], -, -, -, -, -, -\n%i, %i, %f, %i, %f, %f, %i, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, T_eq, P_eq, 0, 0, 0, 0, 0, 0);
+    // fprintf(fp_4, "x_1, y_1, z_1, x_2, y_2, z_2, x_3, y_3, z_3, x_4, y_4, z_4\n");
     
-    printf("a_0: %f\n", a_0);
-    a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, fp_3, fp_4);
+    // printf("a_0: %f\n", a_0);
+    // a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, fp_3, fp_4);
 
-    fclose(fp_1);
-    fclose(fp_2);
-    fclose(fp_3);
-    fclose(fp_4);
+    fclose(fp_rdist);
+    // fclose(fp_2);
+    // fclose(fp_3);
+    // fclose(fp_4);
     gsl_rng_free(r);
     destroy_2D_array(positions);
     destroy_2D_array(forces);
@@ -188,7 +191,7 @@ init_gsl_rng(int seed){
 double
 verlet(double **positions, double **velocities, double **forces, int its, int its_eq, 
             double delta_t, double m, double k_B, double beta, double a_0, int N, 
-            int cell_length, double T_eq, double P_eq, FILE *fp, FILE *fp_traj)
+            int cell_length, double T_eq, double P_eq, FILE *fp, FILE *fp_traj, FILE *fp_rdist)
 {   
     double tau_T = delta_t * 200;
     double tau_P = delta_t * 1000;
@@ -253,9 +256,78 @@ verlet(double **positions, double **velocities, double **forces, int its, int it
                             positions[35][0], positions[35][1], positions[35][2],
                             positions[49][0], positions[49][1], positions[49][2]);
         }
+        if (fp_rdist != NULL && i >= its_eq){
+            double bin_width = 0.2;
+            double L = a_0 * 4;
+            double V = L * L * L;
+            int N_bins = (int)(L / 2 / bin_width);
+            double *bins = calloc(N_bins, sizeof(double));
+
+            radial_dist(bins, positions, N_bins, bin_width, N, L);
+
+            normalize_bins(bins, N_bins, bin_width, N, V);
+            multiplication_with_constant(bins, bins, 1. / N, N_bins);
+
+            for (int j = 0; j < N_bins; j++)
+            {   
+                if (j == N_bins - 1){
+                    fprintf(fp_rdist, "%f", bins[j]);
+                }
+                else{
+                    fprintf(fp_rdist, "%f, ", bins[j]);
+                }
+            }
+            fprintf(fp_rdist, "\n");
+        }
     }
     free(T);
     free(P);
 
     return a_0;
+}
+
+void
+radial_dist(double *bins, double **positions, int N_bins, double bin_width, int N, double L)
+{
+    double r;
+    for (int i = 0; i < N; i++)
+    {
+        for (int j = 0; j < N; j++)
+        {   
+            if (i != j)
+            {
+                r = boundary_distance_between_vectors(positions[i], positions[j], 3, L);
+                for (int l = 0; l < N_bins; l++)
+                {
+                    if (l * bin_width < r && r < (l + 1) * bin_width)
+                    {
+                        bins[l] += 1;
+                    }
+                }
+            }
+        }
+    }
+}
+
+double
+boundary_distance_between_vectors(double *v1, double *v2, int dim, double box_length)
+{
+    double r = 0.0, delta;
+    for (int d = 0; d < dim; d++) {
+        delta = v1[d] - v2[d];
+        delta -= round(delta / box_length) * box_length;  // Apply PBC
+        r += delta * delta;
+    }
+
+    return sqrt(r);
+}
+
+void
+normalize_bins(double *bins, int N_bins, double bin_width, int N, double V)
+{
+    for (int i = 0; i < N_bins; i++)
+    {
+        double norm_factor = (N - 1) * 4 * M_PI * (3 * pow((i + 1), 2) - 3 * i + 1) * pow(bin_width, 3) / 3 / V;
+        bins[i] /= norm_factor;
+    }
 }
