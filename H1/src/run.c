@@ -13,10 +13,15 @@ void calculate(double *potential, double *virial, double **force,
 gsl_rng *init_gsl_rng(int seed);
 double verlet(double **positions, double **velocities, double **forces, int its, int its_eq,
             double delta_t, double m, double k_B, double a_0, double beta, int N, 
-            int cell_length, double T_eq, double P_eq, FILE *fp, FILE *fp_traj, FILE *fp_rdist);
+            int cell_length, double T_eq, double P_eq, FILE *fp, FILE *fp_traj, 
+            FILE *fp_rdist, FILE *fp_sfact);
 void radial_dist(double *bins, double **positions, int N_bins, double bin_width, int N, double L);
 double boundary_distance_between_vectors(double *v1, double *v2, int dim, double box_length);
 void normalize_bins(double *bins, int N_bins, double bin_width, int N, double V);
+double ****init_grid(int N_max, double L);
+void destroy_grid(double ****grid, int N_max);
+void structure_factor(double ****grid, double **positions, double *Sq, int N, int n);
+void spherical_avg(double ****grid, double *Sq, int n, int n_bins, double bin_width, FILE *fp_sfact);
 
 int
 run(int argc, char *argv[])
@@ -59,7 +64,7 @@ run(int argc, char *argv[])
 
     // ********************** Initialize Task 2 & 3 & 4 ************************** //
     
-    int t_max = 20; // [ps]
+    int t_max = 50; // [ps]
     const double delta_t = atof(argv[1]);
     int its = (int)(t_max / delta_t);
 
@@ -100,12 +105,12 @@ run(int argc, char *argv[])
 
     // ********************************* Task 3 ********************************** //
 
-    double T_eq = 500. + 273.15; // [K]
-    double P_eq = 0.1; // [MPa]
-    int its_eq = 10000;
+    // double T_eq = 500. + 273.15; // [K]
+    // double P_eq = 0.1; // [MPa]
+    // int its_eq = 10000;
 
     // Format the filename with delta_t
-    char filename[50];
+    // char filename[50];
     // sprintf(filename, "data/task_3/data_%.3f_%i_%i.csv", delta_t, its, its_eq);
     // FILE *fp = fopen(filename, "w");
     // fprintf(fp, "its, t_max, delta_t, its_eq, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0);
@@ -116,18 +121,15 @@ run(int argc, char *argv[])
     // fprintf(fp_traj, "its, t_max, delta_t, its_eq, -, -, -, -, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0, 0, 0, 0, 0);
     // fprintf(fp_traj, "x_1, y_1, z_1, x_2, y_2, z_2, x_3, y_3, z_3, x_4, y_4, z_4\n");
 
-    sprintf(filename, "data/task_3/rdist_%.3f_%i_%i.csv", delta_t, its, its_eq);
-    FILE *fp_rdist = fopen(filename, "w");
-
-    a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, NULL, NULL, fp_rdist);
+    // a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, NULL, NULL, fp_rdist);
 
     // ********************************* Task 4 ********************************** //
 
-    // int its_eq = 50000;
-    // double T_eq = 900. + 273.15; // [K]
-    // double P_eq = 0.1; // [MPa]
+    int its_eq = 50000;
+    double T_eq = 900. + 273.15; // [K]
+    double P_eq = 0.1; // [MPa]
 
-    // char filename[50];
+    char filename[50];
     // sprintf(filename, "data/task_4/trajs_%.3f_%i_%i.csv", delta_t, its, its_eq);
     // FILE *fp_1 = fopen(filename, "w");
     // fprintf(fp_1, "its, t_max, delta_t, its_eq, -, -, -, -, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -138,12 +140,12 @@ run(int argc, char *argv[])
     // fprintf(fp_2, "its, t_max, delta_t, its_eq, -, -, -, -\n%i, %i, %f, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, 0, 0, 0, 0);
     // fprintf(fp_2, "E_kin [eV], E_pot [eV], E_tot [eV], <T> [K], T [K], <P> [MPa], P [MPa], a [Å]\n");
 
-    // a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, fp_2, fp_1);
+    a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, NULL, NULL, NULL, NULL);
 
-    // t_max = 50; // [ps]
-    // its = (int)(t_max / delta_t);
-    // its_eq = 30000;
-    // T_eq = 700. + 273.15; // [K]
+    t_max = 50; // [ps]
+    its = (int)(t_max / delta_t);
+    its_eq = 30000;
+    T_eq = 700. + 273.15; // [K]
 
     // sprintf(filename, "data/task_4/data_%.3f_%i_%i.csv", delta_t, its, its_eq);
     // FILE *fp_3 = fopen(filename, "w");
@@ -154,11 +156,18 @@ run(int argc, char *argv[])
     // FILE *fp_4 = fopen(filename, "w");
     // fprintf(fp_4, "its, t_max [ps], delta_t [ps], its_eq, T_eq [K], P_eq [MPa], -, -, -, -, -, -\n%i, %i, %f, %i, %f, %f, %i, %i, %i, %i, %i, %i\n", its, t_max, delta_t, its_eq, T_eq, P_eq, 0, 0, 0, 0, 0, 0);
     // fprintf(fp_4, "x_1, y_1, z_1, x_2, y_2, z_2, x_3, y_3, z_3, x_4, y_4, z_4\n");
-    
-    // printf("a_0: %f\n", a_0);
-    // a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, fp_3, fp_4);
 
-    fclose(fp_rdist);
+    // sprintf(filename, "data/task_4/rdist_%.3f_%i_%i.csv", delta_t, its, its_eq);
+    // FILE *fp_rdist = fopen(filename, "w");
+    // fprintf(fp_rdist, "its, its_eq, delta_t [ps], a_0 [Å], ");
+
+    sprintf(filename, "data/task_4/sfact_%.3f_%i_%i.csv", delta_t, its, its_eq);
+    FILE *fp_sfact = fopen(filename, "a");
+    
+    printf("a_0: %f\n", a_0);
+    a_0 = verlet(positions, velocities, forces, its, its_eq, delta_t, m, k_B, beta, a_0, N, cell_length, T_eq, P_eq, NULL, NULL, NULL, fp_sfact);
+
+    fclose(fp_sfact);
     // fclose(fp_2);
     // fclose(fp_3);
     // fclose(fp_4);
@@ -191,7 +200,8 @@ init_gsl_rng(int seed){
 double
 verlet(double **positions, double **velocities, double **forces, int its, int its_eq, 
             double delta_t, double m, double k_B, double beta, double a_0, int N, 
-            int cell_length, double T_eq, double P_eq, FILE *fp, FILE *fp_traj, FILE *fp_rdist)
+            int cell_length, double T_eq, double P_eq, FILE *fp, FILE *fp_traj, 
+            FILE *fp_rdist, FILE *fp_sfact)
 {   
     double tau_T = delta_t * 200;
     double tau_P = delta_t * 1000;
@@ -245,7 +255,6 @@ verlet(double **positions, double **velocities, double **forces, int its, int it
                 multiplication_with_constant(velocities[j], velocities[j], sqrt(alpha_T), 3);
             }
         }
-
         if (fp != NULL){
             fprintf(fp, "%f, %f, %f, %f, %f, %f, %f, %f\n", E_kin, E_pot, E_kin + E_pot, T_avg, T[i], P_avg, P[i], a_0);
         }
@@ -257,16 +266,38 @@ verlet(double **positions, double **velocities, double **forces, int its, int it
                             positions[49][0], positions[49][1], positions[49][2]);
         }
         if (fp_rdist != NULL && i >= its_eq){
-            double bin_width = 0.2;
+            double bin_width = 0.05;
             double L = a_0 * 4;
             double V = L * L * L;
             int N_bins = (int)(L / 2 / bin_width);
             double *bins = calloc(N_bins, sizeof(double));
 
+            if (i == its_eq){
+                for (int j = 0; j < N_bins-4; j++)
+                    if (j == N_bins-5){
+                        fprintf(fp_rdist, "-\n");
+                    }
+                    else{
+                        fprintf(fp_rdist, "-, ");
+                    }
+                for (int j = 0; j < N_bins-3; j++)
+                {
+                    if (j == N_bins - 4){
+                        fprintf(fp_rdist, "-\n");
+                    }
+                    else if (j == 0){
+                        fprintf(fp_rdist, "%i, %i, %f, %f, ", its, its_eq, delta_t, a_0);
+                    }
+                    else{
+                        fprintf(fp_rdist, "-, ");
+                    }
+                }
+            }
+
             radial_dist(bins, positions, N_bins, bin_width, N, L);
 
             normalize_bins(bins, N_bins, bin_width, N, V);
-            multiplication_with_constant(bins, bins, 1. / N, N_bins);
+            multiplication_with_constant(bins, bins, 1. / (N - 1), N_bins);
 
             for (int j = 0; j < N_bins; j++)
             {   
@@ -278,6 +309,29 @@ verlet(double **positions, double **velocities, double **forces, int its, int it
                 }
             }
             fprintf(fp_rdist, "\n");
+        }
+        if (fp_sfact != NULL && i >= its_eq){
+            int N_max = 10;
+            double L = a_0 * 4;
+            int n = 2*N_max + 1;
+            int n_points = n * n * n;
+            double *S_q = (double *)malloc(n_points * sizeof(double));
+
+            int n_bins = 500;
+            double q_max = 2 * M_PI / L * N_max * sqrt(3);
+            double bin_width = q_max / n_bins;
+
+            static double ****grid = NULL;
+            if (i == its_eq){
+                grid = init_grid(N_max, L);
+            }
+            structure_factor(grid, positions, S_q, N, n);
+            spherical_avg(grid, S_q, n, n_bins, bin_width, fp_sfact);
+
+            if (i == its - 1){
+                destroy_grid(grid, N_max);
+                free(S_q);
+            }
         }
     }
     free(T);
@@ -330,4 +384,118 @@ normalize_bins(double *bins, int N_bins, double bin_width, int N, double V)
         double norm_factor = (N - 1) * 4 * M_PI * (3 * pow((i + 1), 2) - 3 * i + 1) * pow(bin_width, 3) / 3 / V;
         bins[i] /= norm_factor;
     }
+}
+
+double ****
+init_grid(int N_max, double L)
+{
+    int N = 2*N_max + 1;
+    double ****grid = (double ****)malloc(N * sizeof(double ***));
+    for (int i = 0; i < N; i++)
+    {
+        grid[i] = (double ***)malloc(N * sizeof(double **));
+        for (int j = 0; j < N; j++)
+        {
+            grid[i][j] = (double **)malloc(N * sizeof(double *));
+            for (int k = 0; k < N; k++)
+            {
+                grid[i][j][k] = (double *)malloc(3 * sizeof(double));
+                grid[i][j][k][0] = 2 * M_PI / L * (i - N_max);
+                grid[i][j][k][1] = 2 * M_PI / L * (j - N_max);
+                grid[i][j][k][2] = 2 * M_PI / L * (k - N_max);
+            }
+        }
+    }
+    return grid;
+}
+
+void
+destroy_grid(double ****grid, int N_max)
+{
+    int N = 2*N_max + 1;
+    for (int i = 0; i < N; i++)
+    {
+        for (int j = 0; j < N; j++)
+        {
+            for (int k = 0; k < N; k++)
+            {
+                free(grid[i][j][k]);
+            }
+            free(grid[i][j]);
+        }
+        free(grid[i]);
+    }
+    free(grid);
+}
+
+void
+structure_factor(double ****grid, double **positions, double *Sq, int N, int n)
+{   
+    double S_q_cos;
+    double S_q_sin;
+    int it = 0;
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            for (int k = 0; k < n; k++)
+            {
+                double qx = grid[i][j][k][0];
+                double qy = grid[i][j][k][1];
+                double qz = grid[i][j][k][2];
+
+                S_q_cos = 0.0;
+                S_q_sin = 0.0;
+                for (int l = 0; l < N; l++)
+                {   
+                    double dot_product = (positions[l][0] * qx + 
+                                          positions[l][1] * qy + 
+                                          positions[l][2] * qz);
+                    S_q_cos += cos(dot_product);
+                    S_q_sin += sin(dot_product);
+                }
+                Sq[it] = 1.0 / N * (S_q_cos * S_q_cos + S_q_sin * S_q_sin);
+                it++;
+            }
+        }
+        
+    }
+}
+
+void
+spherical_avg(double ****grid, double *Sq, int n, int n_bins, double bin_width, FILE *fp_sfact)
+{   
+    double *S_avg = calloc(n_bins, sizeof(double));
+    int *counts = calloc(n_bins, sizeof(double));
+
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            for (int k = 0; k < n; k++)
+            {
+                double q = sqrt(grid[i][j][k][0] * grid[i][j][k][0] + 
+                                grid[i][j][k][1] * grid[i][j][k][1] + 
+                                grid[i][j][k][2] * grid[i][j][k][2]);
+                int bin = (int)(q / bin_width);
+                if (bin == n_bins){
+                    bin = n_bins - 1;
+                }
+                S_avg[bin] += Sq[i * n * n + j * n + k];
+                counts[bin]++;
+            }
+        }
+    }
+    for (int b = 0; b < n_bins; b++) {
+        if (counts[b] > 0) {
+            if (b == n_bins - 1){
+                fprintf(fp_sfact, "%f\n", S_avg[b] / counts[b]);
+            }
+            else{
+                fprintf(fp_sfact, "%f, ", S_avg[b] / counts[b]);
+            }
+        }
+    }
+    free(S_avg);
+    free(counts);
 }
