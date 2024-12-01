@@ -1,6 +1,5 @@
 CC = gcc
 LOCAL=${HOME}/.local
-LIBDIR=lib
 
 CFLAGS = \
 	 -g \
@@ -8,8 +7,7 @@ CFLAGS = \
 	 -Werror \
 	 -Wall \
 	 -Iinclude \
-	 -I${LOCAL}/include \
-	 -Isrc/nepc/
+	 -I${LOCAL}/include
 
 LDFLAGS += \
     -L${LOCAL}/lib \
@@ -24,19 +22,17 @@ CFLAGS_OPT = \
 LIB = \
       -lm \
       -lgsl \
-      -lgslcblas \
-	  -L$(CURDIR)/lib \
-      -lnep
+      -lgslcblas
 
 OBJ = \
       obj/tools.o \
-      obj/lattice.o \
-      obj/potential.o \
-      obj/run.o
+	  obj/run.o
+    #   obj/lattice.o \
+    #   obj/potential.o \
 
-OBJ_LIB = \
-	obj_nep/nep.o \
-	obj_nep/interface.o
+# OBJ_LIB = \
+# 	obj_nep/nep.o \
+# 	obj_nep/interface.o
 
 CXXFLAGS = \
 	   -DUSE_TABLE_FOR_RADIAL_FUNCTIONS \
@@ -54,19 +50,19 @@ else
 CFLAGS += $(CFLAGS_OPT)
 endif
 
-_H1: obj lib H1
+_H2: obj H2
 
 obj/%.o: src/%.c
 	$(CC) -MMD -c $(CFLAGS) $< -o $@
 
-H1: $(MAIN) $(OBJ)
+H2: $(MAIN) $(OBJ)
 	$(CC) $(CFLAGS) $^ $(LIB) -o $@
 
-obj_nep/%.o: src/nepc/%.cpp
-	$(CXX) -MMD -c $(CXXFLAGS) $< -o $@
+# obj_nep/%.o: src/nepc/%.cpp
+# 	$(CXX) -MMD -c $(CXXFLAGS) $< -o $@
 
-lib: $(OBJ_LIB)
-	$(CXX) -shared $^ -o ${LIBDIR}/libnep.so
+# lib: $(OBJ_LIB)
+# 	$(CXX) -shared $^ -o ${LIBDIR}/libnep.so
 
 obj:
 	mkdir -p obj
@@ -76,8 +72,8 @@ obj:
 clean:
 	find . -name "*.o" -exec rm {} \;
 	find . -name "*.d" -exec rm {} \;
-	rm -f H1 run-test
-	rm -rf obj obj_test obj_nep ${LIBDIR}
+	rm -f H2 run-test
+	rm -rf obj obj_test 
 
 .PHONY: clean
 
