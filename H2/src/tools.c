@@ -154,13 +154,13 @@ matrix_matrix_multiplication(
 
 double
 vector_norm(
-            double *v,
+            double *v1,
             unsigned int len
            )
 {   
     double res = 0.;
     for (int i = 0; i < len; i++) {
-        res += v[i] * v[i];
+        res += v1[i] * v1[i];
     }
     return sqrt(res);
 }
@@ -192,8 +192,8 @@ average(
 
 double
 standard_deviation(
-                       double *v,
-                       unsigned int len
+                   double *v,
+                   unsigned int len
                   )
 {   
     double avg = average(v, len);
@@ -202,6 +202,59 @@ standard_deviation(
         res += (v[i] - avg) * (v[i] - avg);
     }
     return sqrt(res / len);
+}
+
+double
+variance(
+        double *v,
+        unsigned int len
+        )
+{
+    double var;
+    var = pow(standard_deviation(v, len), 2);
+
+    return var;
+}
+
+double
+autocorrelation(
+			   double *data,
+			   int data_len,
+			   int time_lag_ind
+               )
+{   
+    double corr = 0.;
+    double avg = average(data, data_len);
+    double var = variance(data, data_len);
+
+    for (int i = 0; i < data_len - time_lag_ind; i++)
+    {
+        corr += (data[i]*data[i+time_lag_ind] - avg*avg) / var; 
+    }
+
+    return corr / (data_len - time_lag_ind);
+}
+
+double 
+block_average(
+              double *data,
+              int data_len,
+              int block_size
+             )
+{
+    int num_blocks = data_len / block_size;
+    double *block_averages = (double *)calloc(num_blocks, sizeof(double));
+    for (int i = 0; i < num_blocks; i++) {
+        double sum = 0.0;
+        for (int j = 0; j < block_size; j++) {
+            sum += data[i * block_size + j];
+        }
+        block_averages[i] = sum / block_size;
+    }
+    double block_avg = block_size * variance(block_averages, num_blocks) / variance(data, data_len);
+    free(block_averages);
+
+    return block_avg;
 }
 
 double
@@ -244,7 +297,8 @@ write_xyz(
           double **positions,
           double **velocities,
           double alat,
-          int natoms)
+          int natoms
+         )
 {
     fprintf(fp, "%i\nLattice=\"%f 0.0 0.0 0.0 %f 0.0 0.0 0.0 %f\" ", natoms, alat, alat, alat);
     fprintf(fp, "Properties=species:S:1:pos:R:3:vel:R:3 pbc=\"T T T\"\n");
@@ -256,9 +310,10 @@ write_xyz(
 }
 
 void fft_freq(
-          double *res,
+              double *res,
               int n,
-              double timestep)
+              double timestep
+             )
 {
     for (int i = 0; i < n; i++) {
         if (i < n / 2) {
@@ -272,7 +327,9 @@ void fft_freq(
 
 /* Freely given functions */
 void
-skip_line(FILE *fp)
+skip_line(
+          FILE *fp
+         )
 {
     int c;
     while (c = fgetc(fp), c != '\n' && c != EOF);
@@ -284,7 +341,8 @@ read_xyz(
          char *symbol,
          double **positions,
          double **velocities,
-         double *alat)
+         double *alat
+        )
 {
     int natoms;
     if(fscanf(fp, "%i\nLattice=\"%lf 0.0 0.0 0.0 %lf 0.0 0.0 0.0 %lf\" ", &natoms, alat, alat, alat) == 0){
@@ -300,10 +358,11 @@ read_xyz(
 }
 
 void powerspectrum(
-           double *res,
-           double *signal,
-           int n,
-                   double timestep)
+                   double *res,
+                   double *signal,
+                   int n,
+                   double timestep
+                  )
 {
     /* Declaration of variables */
     double *complex_coefficient = malloc(sizeof(double) * 2*n); // array for the complex fft data
