@@ -42,8 +42,7 @@ addition_with_constant(
                        double *res,
                        double *v,
                        double constant,
-                       unsigned int len
-                      );
+                       unsigned int len);
 
 /* **********************************************
  *
@@ -57,8 +56,7 @@ multiplication_with_constant(
                              double *res,
                              double *v,
                              double constant,
-                             unsigned int len
-                            );
+                             unsigned int len);
 
 /* **********************************************
  *
@@ -151,27 +149,27 @@ matrix_matrix_multiplication(
 
 /* **********************************************
  *
- * Calculates the L2 norm of v with length
+ * Calculates the L2 norm of v1 with length
  * len
  *
  * **********************************************/
 double
 vector_norm(
-            double *v,
+            double *v1,
             unsigned int len
            );
 
 /* **********************************************
  *
- * Normalizes the vector v such that the L2
- * norm of v is 1.
+ * Normalizes the vector v1 such that the L2
+ * norm of v1 is 1.
  *
  * The length of the vector is len
  *
  * **********************************************/
 void
 normalize_vector(
-                 double *v,
+                 double *v1,
                  unsigned int len
                 );
 
@@ -183,7 +181,7 @@ normalize_vector(
  * **********************************************/
 double
 average(
-        double *v,
+        double *v1,
         unsigned int len
        );
 
@@ -195,9 +193,69 @@ average(
  * **********************************************/
 double
 standard_deviation(
-                   double *v,
-                   unsigned int len
+                       double *v1,
+                       unsigned int len
                   );
+
+/* ***************************************
+*
+* Variance
+*
+* Parameters
+* ----------
+*  v - the raw data from which the
+*      variance should be calculated
+*  len - the length of v
+*
+* Returns
+* -------
+* The variance of the data
+*
+* ***************************************/
+double variance(double *v, unsigned int len);
+
+/* ***************************************
+*
+* Autocorrelation
+*
+* Parameters
+* ----------
+*  data - the raw data from which the
+*         autocorrelation should be
+*         calculated
+*  data_len     - the len of data
+*  time_lag_ind - the lag (index) at 
+*                 which the autocorrelation
+*                 should be calculated
+*
+* Returns
+* -------
+*  The autocorrelation at a specific time
+*  lag
+*
+* ***************************************/
+double autocorrelation(double *data, int data_len, int time_lag_ind);
+
+/* ***************************************
+*
+* Block average
+*
+* Parameters
+* ----------
+*  data       - the raw data from which the
+*               autocorrelation should be
+                calculated
+*  data_len   - the length of data
+*  block_size - the size of the block
+*
+* Returns
+* -------
+* The statistical inefficency for a given
+* block size
+*
+* ***************************************/
+double block_average(double *data, int data_len, int block_size);
+
 
 /* **********************************************
  *
@@ -248,8 +306,7 @@ write_xyz(
           double **positions,
           double **velocities,
           double alat,
-          int natoms
-         );
+          int natoms);
 
 
 /* **********************************************
@@ -263,11 +320,10 @@ write_xyz(
  *
  * **********************************************/
 void powerspectrum(
-                   double *res,
-                   double *signal,
-                   int n,
-                   double timestep
-                  );
+               double *res,
+               double *signal,
+               int n,
+               double timestep);
 
 
 /* **********************************************
@@ -284,10 +340,9 @@ void powerspectrum(
  *
  * **********************************************/
 void fft_freq(
-              double *res,
-              int n,
-              double timestep
-             );
+          double *res,
+          int n,
+          double timestep);
 
 
 /* **********************************************
@@ -297,9 +352,8 @@ void fft_freq(
  * **********************************************/
 void
 read_xyz(
-         FILE *fp,
-         char *symbol,
-         double **positions,
-         double **velocities,
-         double *alat
-        );
+          FILE *fp,
+          char *symbol,
+          double **positions,
+          double **velocities,
+          double *alat);
