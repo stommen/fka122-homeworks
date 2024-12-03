@@ -6,9 +6,6 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
-double PT_fun(double P, double T, double delta_E, double k_B);
-void newton_raphson(double *P, double T, double delta_E, double k_B, FILE *file);
-
 int
 run(
     int argc,
@@ -21,6 +18,7 @@ run(
     // double E_cuzn = -0.294; // eV
     // double k_B = 8.617333262145e-5; // eV/K
     // double N = 2500000;
+    double a = 2.949; // [Å]
 
     // FILE *file = fopen("P_T.csv", "w");
     // double delta_E = E_cucu + E_znzn - 2 * E_cuzn;
@@ -51,20 +49,14 @@ run(
     // free(T);
     // free(P);
 
-    double **pos_1 = create_2D_array(1000, 3);
-    init_sc(pos_1, 10, 2.949, (double[1][3]){{0, 0, 0}});
-    FILE *fp = fopen("pos.csv", "a");
-    for (int i = 0; i < 1000; i++)
-    {
-        fprintf(fp, "%f, %f, %f\n", pos_1[i][0], pos_1[i][1], pos_1[i][2]);
-    }
+    double **sub_A = create_2D_array(1000, 3);
+    double **sub_B = create_2D_array(1000, 3);
+    double **neighbors = create_2D_array(1000,8);
 
-    double **pos_2 = create_2D_array(729, 3);
-    init_sc(pos_2, 9, 2.949, (double[1][3]){{0.5, 0.5, 0.5}});
-    for (int i = 0; i < 729; i++)
-    {
-        fprintf(fp, "%f, %f, %f\n", pos_2[i][0], pos_2[i][1], pos_2[i][2]);
-    }
+    FILE *fn_B = fopen('neighborsB.csv','w');
+    init_sc(sub_A, 10, a, (double[1][3]){{0, 0, 0}}, neighbors,8, fn_B);
+    fclose(fn_B);
+    //init_sc(sub_B, 10, a, (double[1][3]){{0.5, 0.5, 0.5}});
 
     return 0;
 }
@@ -87,3 +79,6 @@ init_gsl_rng(int seed){
 
     return r;
 }
+
+
+
