@@ -26,6 +26,7 @@ LIB = \
 
 OBJ = \
       obj/tools.o \
+	  obj/lattice.o \
 	  obj/run.o
 
 CXXFLAGS = \
