@@ -50,11 +50,13 @@ run(
     // free(P);
 
     double **sub_A = create_2D_array(1000, 3);
-    double **sub_B = create_2D_array(1000, 3);
-    double **neighbors = create_2D_array(1000,8);
+    // double **sub_B = create_2D_array(1000, 3);
+    int **neighbors = (int **)create_2D_array(1000,8);
 
-    FILE *fn_B = fopen('neighborsB.csv','w');
-    init_sc(sub_A, 10, a, (double[1][3]){{0, 0, 0}}, neighbors,8, fn_B);
+    char filename[100];
+    sprintf(filename, "neighborsB.csv");
+    FILE *fn_B = fopen(filename, "w");
+    init_sc(sub_A, 10, a, (double[3]){0, 0, 0}, neighbors,8, fn_B);
     fclose(fn_B);
     //init_sc(sub_B, 10, a, (double[1][3]){{0.5, 0.5, 0.5}});
 
