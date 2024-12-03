@@ -11,4 +11,4 @@
  * >>> init_fcc(pos, Nc, a0);
  *
  * ****************************************************************************/
-void init_bcc(double **, int, double);
+void init_sc(double **, int, double, double[1][3]);

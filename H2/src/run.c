@@ -51,14 +51,20 @@ run(
     // free(T);
     // free(P);
 
-    double **pos = create_2D_array(16, 3);
-    double **vel = create_2D_array(16, 3);
-    init_bcc(pos, 2, 3);
+    double **pos_1 = create_2D_array(1000, 3);
+    init_sc(pos_1, 10, 2.949, (double[1][3]){{0, 0, 0}});
+    FILE *fp = fopen("pos.csv", "a");
+    for (int i = 0; i < 1000; i++)
+    {
+        fprintf(fp, "%f, %f, %f\n", pos_1[i][0], pos_1[i][1], pos_1[i][2]);
+    }
 
-    FILE *file = fopen("cuzn.xyz", "w");
-    write_xyz(file, "Cu", pos, vel, 6, 16);
-    fclose(file);
-    destroy_2D_array(pos);
+    double **pos_2 = create_2D_array(729, 3);
+    init_sc(pos_2, 9, 2.949, (double[1][3]){{0.5, 0.5, 0.5}});
+    for (int i = 0; i < 729; i++)
+    {
+        fprintf(fp, "%f, %f, %f\n", pos_2[i][0], pos_2[i][1], pos_2[i][2]);
+    }
 
     return 0;
 }
