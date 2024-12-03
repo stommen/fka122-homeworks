@@ -93,6 +93,7 @@ clean:
 
 # OBJ = \
 #       obj/tools.o \
+		obj/lattice.o \
 #       obj/run.o
 
 # # OBJ_LIB = \
