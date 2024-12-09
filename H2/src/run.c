@@ -25,8 +25,8 @@ double boundary_distance_between_vectors(double *v1, double *v2, int dim, double
 void nearest_neighbors_bcc(double **pos_A, double **pos_B, int N_atoms,
                            int **neighbors, double box_length,
                            double cutoff, double closest_distance);
-metro metropolis(int its, int *N, int **neighbors, double k_B, double T,
-                double E_cucu, double E_znzn, double E_cuzn, double E_tot, gsl_rng *r, FILE *fp);
+metro metropolis(int its, int *N, int **neighbors, double k_B, double T, double E_cucu, 
+                 double E_znzn, double E_cuzn, double E_tot, gsl_rng *r, FILE *fp, double *U);
 idx swappie(int *N, gsl_rng *r);
 double energy_bond(idx index, int *N, int **neighbors,
                    double E_cucu, double E_znzn, double E_cuzn);
@@ -40,9 +40,11 @@ run(int argc, char *argv[])
     double E_znzn = -0.113; // eV
     double E_cuzn = -0.294; // eV
     double k_B = 8.617333262145e-5; // eV/K
-    // double N = 2500000;
     double a = 2.949; // [Å]
     double closest_distance_bcc = sqrt(3) * a / 2;
+    int L = 10;
+    int N_atoms = 2 * L * L * L;
+    double E_initial = 2000*E_cuzn;
     char filename[100];
 
     // ------------------------------- Task 1 --------------------------------- //
@@ -78,61 +80,147 @@ run(int argc, char *argv[])
 
     // ------------------------------- Task 2 --------------------------------- //
 
-    int L = 10;
-    int N_atoms = 2 * L * L * L;
-    int its_eq = 100000;
-    double T = 1000;
-    double E_tot = 2000*E_cuzn;
-    gsl_rng *r = init_gsl_rng(1234);
-    metro metro_result;
+    // int its_eq = 100000;
+    // double T = 1000;
+    // gsl_rng *r = init_gsl_rng(1234);
+    // metro metro_result;
 
-    double **sub_A = create_2D_array(N_atoms / 2, 3);
-    double **sub_B = create_2D_array(N_atoms / 2, 3);
-    int **neighbors = (int **)create_2D_array(N_atoms, 8);
-    int *atoms = (int *)calloc(N_atoms, sizeof(int));
-    for (int i = 0; i < N_atoms / 2; i++)
-    {
-        atoms[i] = 1;
-    }
+    // double **sub_A = create_2D_array(N_atoms / 2, 3);
+    // double **sub_B = create_2D_array(N_atoms / 2, 3);
+    // int **neighbors = (int **)create_2D_array(N_atoms, 8);
+    // int *atoms = (int *)calloc(N_atoms, sizeof(int));
+    // for (int i = 0; i < N_atoms / 2; i++)
+    // {
+    //     atoms[i] = 1;
+    // }
 
-    init_sc(sub_A, L, a, (double[3]){0, 0, 0});
-    init_sc(sub_B, L, a, (double[3]){0.5, 0.5, 0.5});
-    nearest_neighbors_bcc(sub_A, sub_B, N_atoms, neighbors, 10 * a, 0.001, closest_distance_bcc);
+    // init_sc(sub_A, L, a, (double[3]){0, 0, 0});
+    // init_sc(sub_B, L, a, (double[3]){0.5, 0.5, 0.5});
+    // nearest_neighbors_bcc(sub_A, sub_B, N_atoms, neighbors, 10 * a, 0.001, closest_distance_bcc);
 
-    sprintf(filename, "data/task_2/equilibrium_%i_%.0f.csv", its_eq, T);
-    FILE *fp_eq = fopen(filename, "w");
-    fprintf(fp_eq, "accepted, E_tot\n");
+    // sprintf(filename, "data/task_2/equilibrium_%i_%.0f.csv", its_eq, T);
+    // FILE *fp_eq = fopen(filename, "w");
+    // fprintf(fp_eq, "accepted, E_tot\n");
 
-    metro_result = metropolis(its_eq, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, E_tot, r, fp_eq);
-    E_tot = metro_result.Etot;
-    int accepted = metro_result.accepted;
-    printf("Acceptance rate from equilibrium: %f\n", (double)accepted / its_eq);
+    // metro_result = metropolis(its_eq, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, E_tot, r, fp_eq);
+    // E_tot = metro_result.Etot;
+    // int accepted = metro_result.accepted;
+    // printf("Acceptance rate from equilibrium: %f\n", (double)accepted / its_eq);
 
-    int its = 1000000;
-    sprintf(filename, "data/task_2/energy_%i_%i_%.0f.csv", its_eq, its, T);
-    FILE *fp = fopen(filename, "w");
-    fprintf(fp, "Equilibrium iterations, Accepted ratio equilibrium, E_tot equilibrium\n");
-    fprintf(fp, "%i, %f, %f\n", its_eq, (double)accepted / its_eq, E_tot);
-    fprintf(fp, "accepted, E_tot\n");
+    // int its = 1000000;
+    // sprintf(filename, "data/task_2/energy_%i_%i_%.0f.csv", its_eq, its, T);
+    // FILE *fp = fopen(filename, "w");
+    // fprintf(fp, "Equilibrium iterations, Accepted ratio equilibrium, E_tot equilibrium\n");
+    // fprintf(fp, "%i, %f, %f\n", its_eq, (double)accepted / its_eq, E_tot);
+    // fprintf(fp, "accepted, E_tot\n");
 
-    sprintf(filename, "data/task_2/lattice/atoms_%i_%i_%.0f.csv", its_eq, its, T);
-    FILE *fp_atoms = fopen(filename, "w");
-    sprintf(filename, "data/task_2/lattice/neighbors.csv");
-    FILE *fp_neighbors = fopen(filename, "w");
+    // sprintf(filename, "data/task_2/lattice/atoms_%i_%i_%.0f.csv", its_eq, its, T);
+    // FILE *fp_atoms = fopen(filename, "w");
+    // sprintf(filename, "data/task_2/lattice/neighbors.csv");
+    // FILE *fp_neighbors = fopen(filename, "w");
 
-    metro_result = metropolis(its, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, E_tot, r, fp);
+    // metro_result = metropolis(its, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, E_tot, r, fp);
 
-    lattice_to_files(fp_atoms, fp_neighbors, atoms, neighbors, N_atoms);
+    // lattice_to_files(fp_atoms, fp_neighbors, atoms, neighbors, N_atoms);
 
-    destroy_2D_array(sub_A);
-    destroy_2D_array(sub_B);
-    destroy_2D_array((double **)neighbors);
-    free(atoms);
-    fclose(fp);
-    fclose(fp_atoms);
-    gsl_rng_free(r);
+    // destroy_2D_array(sub_A);
+    // destroy_2D_array(sub_B);
+    // destroy_2D_array((double **)neighbors);
+    // free(atoms);
+    // fclose(fp);
+    // fclose(fp_atoms);
+    // gsl_rng_free(r);
 
     // ------------------------------- Task 3 --------------------------------- //
+
+    double T_start = 300; // [K]
+    double T_end = 1000; // [K]
+    gsl_rng *r = init_gsl_rng(1234);
+    metro metro_result;
+    metro metro_result_eq;
+    
+    sprintf(filename, "data/task_3/U.csv");
+    FILE *fp_U = fopen(filename, "w");
+    fprintf(fp_U, "T, U, Accepted ratio, Accepted ratio equilibrium\n");
+
+    sprintf(filename, "data/task_3/P.csv");
+    FILE *fp_P = fopen(filename, "w");
+    fprintf(fp_P, "T, N_Cu_A, N_Zn_A, N_Cu_B, N_Zn_B, Accepted ratio, Accepted ratio equilibrium\n");
+
+    int its_eq;
+    for (double T = T_start; T < T_end+1; T+=10)
+    {   
+        if (T < 600)
+        {
+            its_eq = 500000;
+        }
+        else
+        {
+            its_eq = 200000;
+        }
+        double **sub_A = create_2D_array(N_atoms / 2, 3);
+        double **sub_B = create_2D_array(N_atoms / 2, 3);
+        int **neighbors = (int **)create_2D_array(N_atoms, 8);
+        int *atoms = (int *)calloc(N_atoms, sizeof(int));
+        int N_Cu_A = 0;
+        int N_Zn_A = 0;
+        int N_Cu_B = 0;
+        int N_Zn_B = 0;
+        for (int i = 0; i < N_atoms / 2; i++)
+        {
+            atoms[i] = 1;
+        }
+
+        init_sc(sub_A, L, a, (double[3]){0, 0, 0});
+        init_sc(sub_B, L, a, (double[3]){0.5, 0.5, 0.5});
+        nearest_neighbors_bcc(sub_A, sub_B, N_atoms, neighbors, 10 * a, 0.001, closest_distance_bcc);
+
+        metro_result_eq = metropolis(its_eq, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, E_initial, r, NULL, NULL);
+
+        int its = 1000000;
+
+        double *U = (double *)calloc(its, sizeof(double));
+        metro_result = metropolis(its, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, metro_result_eq.Etot, r, NULL, U);
+
+        for (int i = 0; i < N_atoms; i++)
+        {
+            if (atoms[i] == 0 && i < 1000)
+            {
+                N_Zn_A++;
+            }
+            else if (atoms[i] == 1 && i < 1000)
+            {
+                N_Cu_A++;
+            }
+            else if (atoms[i] == 0 && i >= 1000)
+            {
+                N_Zn_B++;
+            }
+            else if (atoms[i] == 1 && i >= 1000)
+            {
+                N_Cu_B++;
+            }
+        }
+        fprintf(fp_P, "%f, %i, %i, %i, %i, %f, %f\n", T, N_Cu_A, N_Zn_A, N_Cu_B, N_Zn_B, (double)metro_result.accepted / its, (double)metro_result_eq.accepted / its_eq);
+
+        double *U_trimmed = (double *)calloc(metro_result.accepted, sizeof(double));
+        for (int i = 0; i < metro_result.accepted; i++)
+        {
+            U_trimmed[i] = U[i];
+        }
+        fprintf(fp_U, "%f, %f, %f, %f\n", T, average(U_trimmed, metro_result.accepted), (double)metro_result.accepted / its, (double)metro_result_eq.accepted / its_eq);
+
+        free(U);
+        free(U_trimmed);
+        destroy_2D_array(sub_A);
+        destroy_2D_array(sub_B);
+        destroy_2D_array((double **)neighbors);
+        free(atoms);
+    }
+
+    fclose(fp_U);
+    fclose(fp_P);
+    gsl_rng_free(r);
 
     return 0;
 }
@@ -207,8 +295,8 @@ nearest_neighbors_bcc(double **pos_A, double **pos_B, int N_atoms,
 }
 
 metro
-metropolis(int its, int *N, int **neighbors, double k_B, double T,
-           double E_cucu, double E_znzn, double E_cuzn, double E_tot, gsl_rng *r, FILE *fp)
+metropolis(int its, int *N, int **neighbors, double k_B, double T, double E_cucu, 
+           double E_znzn, double E_cuzn, double E_tot, gsl_rng *r, FILE *fp, double *U)
 {   
     metro metro_result;
     idx index;
@@ -231,12 +319,16 @@ metropolis(int its, int *N, int **neighbors, double k_B, double T,
         delta_E = E_prime - E;
         alpha = exp(-delta_E / k_B / T);
         if (gsl_rng_uniform(r) < alpha)
-        {
+        {   
             accepted++;
             E_tot += delta_E;
             if (fp != NULL)
             {
                 fprintf(fp, "%i, %f\n", accepted, E_tot);
+            }
+            if (U != NULL)
+            {   
+                U[accepted-1] = E_tot;
             }
         }
         else
