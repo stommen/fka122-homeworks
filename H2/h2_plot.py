@@ -59,7 +59,16 @@ ax.scatter(1, 0, 1, c='chocolate', marker='o', alpha=1, s=650)
 ax.scatter(0, 1, 1, c='chocolate', marker='o', alpha=1, s=650)
 ax.scatter(0, 1, 1, c='chocolate', marker='o', alpha=1, s=50,label='Cu in $a_\mathrm{sub}$')
 ax.scatter(0.5,0.5,0.5, c='silver', marker='o', alpha=1, s=50,label='Zn in $b_\mathrm{sub}$')
-ax.scatter(0.5,0.5,0.5, c='silver', marker='o', alpha=1, s=650)
+# ax.scatter(0.5,0.5,0.5, c='silver', marker='o', alpha=1, s=650)
+# ax.scatter(1.5,0.5,0.5, c='silver', marker='o', alpha=1, s=650)
+# ax.scatter(0.5,1.5,0.5, c='silver', marker='o', alpha=1, s=650)
+# ax.scatter(0.5,0.5,1.5, c='silver', marker='o', alpha=1, s=650)
+# ax.scatter(0.5,1.5,1.5, c='silver', marker='o', alpha=1, s=650)
+# ax.scatter(1.5,0.5,1.5, c='silver', marker='o', alpha=1, s=650)
+# ax.scatter(1.5,1.5,0.5, c='silver', marker='o', alpha=1, s=650)
+# ax.scatter(1.5,1.5,1.5, c='silver', marker='o', alpha=1, s=650)
+
+
 ax.padding = 10
 ax.legend(loc='upper right',fontsize=13)
 
