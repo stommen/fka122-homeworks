@@ -33,7 +33,7 @@ void nearest_neighbors_bcc(double **pos_A, double **pos_B, int N_atoms,
                            double cutoff, double closest_distance);
 metro metropolis(int its, int *atoms, int **neighbors, double k_B, double T, double E_cucu, 
                  double E_znzn, double E_cuzn, double E_tot, gsl_rng *r, 
-                 double *C_V, double *U, double *P, double *R, int N_atoms);
+                 double *C_V, double *U, double *P, double *R, int N_atoms, FILE *fp_eq);
 idx swappy(int *atoms, gsl_rng *r);
 double energy_bond(idx index, int *atoms, int **neighbors,
                    double E_cucu, double E_znzn, double E_cuzn);
@@ -58,29 +58,32 @@ run(int argc, char *argv[])
 
     // ------------------------------- Task 1 --------------------------------- //
 
-    // FILE *file = fopen("P_T.csv", "w");
+    // double step_size = 0.0001;
+    // int N = (int)(1 / step_size) + 100;
+    // FILE *file = fopen("data/task_1/data.csv", "w");
     // double delta_E = E_cucu + E_znzn - 2 * E_cuzn;
+    // double *U = (double *)malloc(N * sizeof(double));
     // double *T = (double *)malloc(N * sizeof(double));
-    // double *P = (double *)malloc(N * sizeof(double));
-    // P[0] = -1.;
-    // double step_size = 0.00000001;
-    // for (int i = 1; i < N-1; i++)
+    // double *P = (double *)malloc((N + 1) * sizeof(double));
+    // P[0] = 1.;
+    // for (int i = 1; i < N; i++)
     // {   
-    //     P[i] = P[i-1] + step_size;
-    //     if (fabs(P[i]) > 0.99)
-    //     {   
-    //         step_size = 0.00000001;
-    //     }
-    //     else if (fabs(P[i]) <= 0.99 )
+    //     if (i < (int)(1 / step_size))
     //     {
-    //         step_size = 0.001;
+    //         P[i] = P[i-1] - step_size;
+    //         T[i-1] = 4 * P[i] * delta_E / k_B / log((1 + P[i]) / (1 - P[i]));
+    //         U[i-1] = 2 * N_atoms * (E_cucu + E_znzn + 2 * E_cuzn) - 2 * N_atoms * P[i] * P[i] * delta_E;
+    //         double C_V = variance(U, i) / k_B / T[i-1] / T[i-1];
+    //         fprintf(file, "%f, %f, %f, %f\n", P[i], T[i-1], U[i-1], C_V);
     //     }
-    //     else if (fabs(P[i]) > 1)
+    //     else if (i >= (int)(1 / step_size))
     //     {
-    //         break;
+    //         P[i] = 0.;
+    //         T[i-1] = T[i-2] + 5;
+    //         U[i-1] = 2 * N_atoms * (E_cucu + E_znzn + 2 * E_cuzn) - 2 * N_atoms * P[i] * P[i] * delta_E;
+    //         double C_V = variance(U, i) / k_B / T[i-1] / T[i-1];
+    //         fprintf(file, "%f, %f, %f, %f\n", P[i], T[i-1], U[i-1], C_V);
     //     }
-    //     T[i] = 4 * P[i] * delta_E / k_B / log((1 + P[i]) / (1 - P[i]));
-    //     fprintf(file, "%f, %f, %f\n", P[i], T[i], step_size);
     // }
 
     // fclose(file);
@@ -110,7 +113,7 @@ run(int argc, char *argv[])
     // FILE *fp_eq = fopen(filename, "w");
     // fprintf(fp_eq, "accepted, E_tot\n");
 
-    // metro_result = metropolis(its_eq, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, E_initial, r, fp_eq, NULL);
+    // metro_result = metropolis(its_eq, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, E_initial, r, NULL, NULL, NULL, NULL, N_atoms, fp_eq);
     // E_tot = metro_result.Etot;
     // int accepted = metro_result.accepted;
     // printf("Acceptance rate from equilibrium: %f\n", (double)accepted / its_eq);
@@ -148,16 +151,20 @@ run(int argc, char *argv[])
     metro metro_result_eq;
     atom_count lat_props;
     
-    sprintf(filename, "data/task_3/U.csv");
-    FILE *fp_U = fopen(filename, "w");
-    fprintf(fp_U, "T, U, Accepted ratio, Accepted ratio equilibrium\n");
+    // sprintf(filename, "data/task_3/U.csv");
+    // FILE *fp_U = fopen(filename, "w");
+    // fprintf(fp_U, "T, U, Accepted ratio, Accepted ratio equilibrium\n");
 
-    sprintf(filename, "data/task_3/P_r.csv");
-    FILE *fp_P_r = fopen(filename, "w");
-    fprintf(fp_P_r, "T, N_Cu_A, N_CuZn, Accepted ratio, Accepted ratio equilibrium\n");
+    // sprintf(filename, "data/task_3/P_r.csv");
+    // FILE *fp_P_r = fopen(filename, "w");
+    // fprintf(fp_P_r, "T, N_Cu_A, N_CuZn, Accepted ratio, Accepted ratio equilibrium\n");
+
+    sprintf(filename, "data/task_3/data.csv");
+    FILE *fp_data = fopen(filename, "w");
+    fprintf(fp_data, "T, U, C_V, P, r, Accepted ratio, Accepted ratio equilibrium\n");
 
     int its_eq;
-    int dt = 10;
+    int dt = 25;
     for (double T = T_start; T < T_end+1; T+=dt)
     {   
         if (T < 600)
@@ -181,51 +188,68 @@ run(int argc, char *argv[])
         init_sc(sub_B, L, a, (double[3]){0.5, 0.5, 0.5});
         nearest_neighbors_bcc(sub_A, sub_B, N_atoms, neighbors, 10 * a, 0.001, closest_distance_bcc);
 
-        metro_result_eq = metropolis(its_eq, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, E_initial, r, NULL, NULL, NULL, NULL, N_atoms);
+        metro_result_eq = metropolis(its_eq, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, E_initial, r, NULL, NULL, NULL, NULL, N_atoms, NULL);
 
         int its = 1000000;
+        // if ((int)T % 100)
+        // {   
+        //     if (T < 601)
+        //     {
+        //         its = 2000000;
+        //     }
+        //     else
+        //     {
+        //         its = 3000000;
+        //     }
+        // }
         double *U = (double *)calloc(its, sizeof(double));
         double *C_V = (double *)calloc(its, sizeof(double));
         double *P = (double *)calloc(its, sizeof(double));
         double *R = (double *)calloc(its, sizeof(double));
-        metro_result = metropolis(its, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, metro_result_eq.Etot, r, U, C_V, P, R, N_atoms);
+        metro_result = metropolis(its, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, metro_result_eq.Etot, r, U, C_V, P, R, N_atoms, NULL);
 
         lat_props = lattice_props(atoms, neighbors, N_atoms);
-        fprintf(fp_P_r, "%f, %i, %i, %f, %f\n", T, lat_props.N_Cu_A, lat_props.N_CuZn, (double)metro_result.accepted / its, (double)metro_result_eq.accepted / its_eq);
+        // fprintf(fp_P_r, "%f, %i, %i, %f, %f\n", T, lat_props.N_Cu_A, lat_props.N_CuZn, (double)metro_result.accepted / its, (double)metro_result_eq.accepted / its_eq);
 
         double U_avg= average(U, metro_result.accepted);
-        fprintf(fp_U, "%f, %f, %f, %f\n", T, U_avg, (double)metro_result.accepted / its, (double)metro_result_eq.accepted / its_eq);
+        double C_V_inst = variance(U, metro_result.accepted) / k_B / T / T;
+        double p = (2. * lat_props.N_Cu_A / (N_atoms / 2) - 1);
+        double Rr = (lat_props.N_CuZn - 4. * N_atoms / 2) / (4 * N_atoms / 2);
+        // fprintf(fp_U, "%f, %f, %f, %f, %f\n", T, U_avg, C_V_inst, (double)metro_result.accepted / its, (double)metro_result_eq.accepted / its_eq);
+        fprintf(fp_data, "%f, %f, %f, %f, %f, %f, %f\n", T, U_avg, C_V_inst, p, Rr, (double)metro_result.accepted / its, (double)metro_result_eq.accepted / its_eq);
 
-        if (T == 700)
-        {   
-            sprintf(filename, "data/task_3/test.csv");
-            FILE *fp_test = fopen(filename, "w");
-            fprintf(fp_test, "%i\n", metro_result.accepted);
-            for (int i = 0; i < its; i++)
-            {
-                fprintf(fp_test, "%f, %f, %f, %f\n", U[i], C_V[i], P[i], R[i]);
-            }
+    //     if ((int)T % 100 == 0 && T < 1001)
+    //     {   
+    //         sprintf(filename, "data/task_3/test.csv");
+    //         FILE *fp_test = fopen(filename, "w");
+    //         fprintf(fp_test, "%i\n", metro_result.accepted);
+    //         for (int i = 0; i < its; i++)
+    //         {
+    //             fprintf(fp_test, "%f, %f, %f, %f\n", U[i], C_V[i], P[i], R[i]);
+    //         }
 
-            sprintf(filename, "data/task_3/auto_corr.csv");
-            FILE *fp_auto_corr = fopen(filename, "w");
-            fprintf(fp_auto_corr, "U, C_V, P, R\n");
+    //         sprintf(filename, "data/task_3/auto_corr_%i.csv", (int)T);
+    //         FILE *fp_auto_corr = fopen(filename, "w");
+    //         fprintf(fp_auto_corr, "N, Var_U, Var_CV, Var_P, Var_R\n");
+    //         fprintf(fp_auto_corr, "%i, %f, %f, %f, %f\n", metro_result.accepted, variance(U, metro_result.accepted), variance(C_V, metro_result.accepted), variance(P, metro_result.accepted), variance(R, metro_result.accepted));
+    //         fprintf(fp_auto_corr, "Lag, U, C_V, P, R\n");
 
-            sprintf(filename, "data/task_3/blocking.csv");
-            FILE *fp_blocking = fopen(filename, "w");
-            fprintf(fp_blocking, "U, C_V, P, R\n");
-            for (int i = 0; i < 5000; i+=1)
-            {   
-                addition_with_constant(U, U, -average(U, metro_result.accepted), metro_result.accepted);
-                addition_with_constant(C_V, C_V, -average(C_V, metro_result.accepted), metro_result.accepted);
-                addition_with_constant(P, P, -average(P, metro_result.accepted), metro_result.accepted);
-                addition_with_constant(R, R, -average(R, metro_result.accepted), metro_result.accepted);
-                fprintf(fp_auto_corr, "%f, %f, %f, %f\n", autocorrelation(U, metro_result.accepted, i), autocorrelation(C_V, metro_result.accepted, i), autocorrelation(P, metro_result.accepted, i), autocorrelation(R, metro_result.accepted, i));
-            }
-            for (int b = 1; b < metro_result.accepted*0.25; b+=1)
-            {
-                fprintf(fp_blocking, "%i, %f, %f, %f, %f\n", b, block_average(U, metro_result.accepted, b), block_average(C_V, metro_result.accepted, b), block_average(P, metro_result.accepted, b), block_average(R, metro_result.accepted, b));
-            }
-        }
+    //         sprintf(filename, "data/task_3/blocking_%i.csv", (int)T);
+    //         FILE *fp_blocking = fopen(filename, "w");
+    //         fprintf(fp_blocking, "Block_size, U, C_V, P, R\n");
+    //         for (int i = 0; i < 100000; i+=100)
+    //         {   
+    //             addition_with_constant(U, U, -average(U, metro_result.accepted), metro_result.accepted);
+    //             addition_with_constant(C_V, C_V, -average(C_V, metro_result.accepted), metro_result.accepted);
+    //             addition_with_constant(P, P, -average(P, metro_result.accepted), metro_result.accepted);
+    //             addition_with_constant(R, R, -average(R, metro_result.accepted), metro_result.accepted);
+    //             fprintf(fp_auto_corr, "%i, %f, %f, %f, %f\n", i, autocorrelation(U, metro_result.accepted, i), autocorrelation(C_V, metro_result.accepted, i), autocorrelation(P, metro_result.accepted, i), autocorrelation(R, metro_result.accepted, i));
+    //         }
+    //         for (int b = 1; b < metro_result.accepted*0.5; b+=100)
+    //         {
+    //             fprintf(fp_blocking, "%i, %f, %f, %f, %f\n", b, block_average(U, metro_result.accepted, b), block_average(C_V, metro_result.accepted, b), block_average(P, metro_result.accepted, b), block_average(R, metro_result.accepted, b));
+    //         }
+    //     }
         
         free(U);
         free(C_V);
@@ -237,8 +261,9 @@ run(int argc, char *argv[])
         free(atoms);
     }
 
-    fclose(fp_U);
-    fclose(fp_P_r);
+    // fclose(fp_U);
+    // fclose(fp_P_r);
+    fclose(fp_data);
     gsl_rng_free(r);
 
     return 0;
@@ -316,10 +341,10 @@ nearest_neighbors_bcc(double **pos_A, double **pos_B, int N_atoms,
 metro
 metropolis(int its, int *atoms, int **neighbors, double k_B, double T, double E_cucu, 
            double E_znzn, double E_cuzn, double E_tot, gsl_rng *r, double *U, 
-           double *C_V, double *P, double *R, int N_atoms)
+           double *C_V, double *P, double *R, int N_atoms, FILE *fp_eq)
 {   
     metro metro_result;
-    atom_count lat_props;
+    // atom_count lat_props;
     idx index;
     double E;
     double E_prime;
@@ -343,21 +368,29 @@ metropolis(int its, int *atoms, int **neighbors, double k_B, double T, double E_
         {   
             accepted++;
             E_tot += delta_E;
+            if (fp_eq != NULL)
+            {
+                fprintf(fp_eq, "%i, %f\n", accepted, E_tot);
+            }
             if (U != NULL)
             {   
                 U[accepted-1] = E_tot;
-                if (T == 700 && C_V != NULL)
-                {
-                    double U_fluct = variance(U, accepted);
-                    C_V[accepted-1] = U_fluct / k_B / T / T;
-                    lat_props = lattice_props(atoms, neighbors, N_atoms);
-                    P[accepted-1] = (2. * lat_props.N_Cu_A / (N_atoms / 2) - 1);
-                    R[accepted-1] = (lat_props.N_CuZn - 4. * N_atoms / 2) / (4 * N_atoms / 2);
-                }
+                // if ((int)T % 100 == 0 && T < 1001)
+                // {
+                //     double U_fluct = variance(U, accepted);
+                //     C_V[accepted-1] = U_fluct / k_B / T / T;
+                //     lat_props = lattice_props(atoms, neighbors, N_atoms);
+                //     P[accepted-1] = (2. * lat_props.N_Cu_A / (N_atoms / 2) - 1);
+                //     R[accepted-1] = (lat_props.N_CuZn - 4. * N_atoms / 2) / (4 * N_atoms / 2);
+                // }
             }
         }
         else
         {    
+            if (fp_eq != NULL)
+            {
+                fprintf(fp_eq, "%i, %f\n", accepted, E_tot);
+            }
             atoms[A] = value_A;
             atoms[B] = value_B;
         }
