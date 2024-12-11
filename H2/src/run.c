@@ -20,17 +20,25 @@ typedef struct
     double Etot;
 } metro;
 
+typedef struct
+{
+    int N_Cu_A;
+    int N_CuZn;
+} atom_count;
+
 gsl_rng * init_gsl_rng(int seed);
 double boundary_distance_between_vectors(double *v1, double *v2, int dim, double box_length);
 void nearest_neighbors_bcc(double **pos_A, double **pos_B, int N_atoms,
                            int **neighbors, double box_length,
                            double cutoff, double closest_distance);
-metro metropolis(int its, int *N, int **neighbors, double k_B, double T, double E_cucu, 
-                 double E_znzn, double E_cuzn, double E_tot, gsl_rng *r, FILE *fp, double *U);
-idx swappie(int *N, gsl_rng *r);
-double energy_bond(idx index, int *N, int **neighbors,
+metro metropolis(int its, int *atoms, int **neighbors, double k_B, double T, double E_cucu, 
+                 double E_znzn, double E_cuzn, double E_tot, gsl_rng *r, 
+                 double *C_V, double *U, double *P, double *R, int N_atoms);
+idx swappy(int *atoms, gsl_rng *r);
+double energy_bond(idx index, int *atoms, int **neighbors,
                    double E_cucu, double E_znzn, double E_cuzn);
-void lattice_to_files(FILE *fp_atoms, FILE *fp_neighbors, int *N, int **neighbors, int N_atoms);
+void lattice_to_files(FILE *fp_atoms, FILE *fp_neighbors, int *atoms, int **neighbors, int N_atoms);
+atom_count lattice_props(int *atoms, int **neighbors, int N_atoms);
 
 int
 run(int argc, char *argv[])
@@ -46,6 +54,7 @@ run(int argc, char *argv[])
     int N_atoms = 2 * L * L * L;
     double E_initial = 2000*E_cuzn;
     char filename[100];
+    gsl_rng *r = init_gsl_rng(19);
 
     // ------------------------------- Task 1 --------------------------------- //
 
@@ -82,7 +91,6 @@ run(int argc, char *argv[])
 
     // int its_eq = 100000;
     // double T = 1000;
-    // gsl_rng *r = init_gsl_rng(1234);
     // metro metro_result;
 
     // double **sub_A = create_2D_array(N_atoms / 2, 3);
@@ -102,7 +110,7 @@ run(int argc, char *argv[])
     // FILE *fp_eq = fopen(filename, "w");
     // fprintf(fp_eq, "accepted, E_tot\n");
 
-    // metro_result = metropolis(its_eq, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, E_tot, r, fp_eq);
+    // metro_result = metropolis(its_eq, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, E_initial, r, fp_eq, NULL);
     // E_tot = metro_result.Etot;
     // int accepted = metro_result.accepted;
     // printf("Acceptance rate from equilibrium: %f\n", (double)accepted / its_eq);
@@ -128,6 +136,7 @@ run(int argc, char *argv[])
     // destroy_2D_array((double **)neighbors);
     // free(atoms);
     // fclose(fp);
+    // fclose(fp_eq);
     // fclose(fp_atoms);
     // gsl_rng_free(r);
 
@@ -135,37 +144,34 @@ run(int argc, char *argv[])
 
     double T_start = 300; // [K]
     double T_end = 1000; // [K]
-    gsl_rng *r = init_gsl_rng(1234);
     metro metro_result;
     metro metro_result_eq;
+    atom_count lat_props;
     
     sprintf(filename, "data/task_3/U.csv");
     FILE *fp_U = fopen(filename, "w");
     fprintf(fp_U, "T, U, Accepted ratio, Accepted ratio equilibrium\n");
 
-    sprintf(filename, "data/task_3/P.csv");
-    FILE *fp_P = fopen(filename, "w");
-    fprintf(fp_P, "T, N_Cu_A, N_Zn_A, N_Cu_B, N_Zn_B, Accepted ratio, Accepted ratio equilibrium\n");
+    sprintf(filename, "data/task_3/P_r.csv");
+    FILE *fp_P_r = fopen(filename, "w");
+    fprintf(fp_P_r, "T, N_Cu_A, N_CuZn, Accepted ratio, Accepted ratio equilibrium\n");
 
     int its_eq;
-    for (double T = T_start; T < T_end+1; T+=10)
+    int dt = 10;
+    for (double T = T_start; T < T_end+1; T+=dt)
     {   
         if (T < 600)
         {
-            its_eq = 500000;
+            its_eq = 300000;
         }
         else
         {
-            its_eq = 200000;
+            its_eq = 100000;
         }
         double **sub_A = create_2D_array(N_atoms / 2, 3);
         double **sub_B = create_2D_array(N_atoms / 2, 3);
         int **neighbors = (int **)create_2D_array(N_atoms, 8);
         int *atoms = (int *)calloc(N_atoms, sizeof(int));
-        int N_Cu_A = 0;
-        int N_Zn_A = 0;
-        int N_Cu_B = 0;
-        int N_Zn_B = 0;
         for (int i = 0; i < N_atoms / 2; i++)
         {
             atoms[i] = 1;
@@ -175,43 +181,56 @@ run(int argc, char *argv[])
         init_sc(sub_B, L, a, (double[3]){0.5, 0.5, 0.5});
         nearest_neighbors_bcc(sub_A, sub_B, N_atoms, neighbors, 10 * a, 0.001, closest_distance_bcc);
 
-        metro_result_eq = metropolis(its_eq, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, E_initial, r, NULL, NULL);
+        metro_result_eq = metropolis(its_eq, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, E_initial, r, NULL, NULL, NULL, NULL, N_atoms);
 
         int its = 1000000;
-
         double *U = (double *)calloc(its, sizeof(double));
-        metro_result = metropolis(its, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, metro_result_eq.Etot, r, NULL, U);
+        double *C_V = (double *)calloc(its, sizeof(double));
+        double *P = (double *)calloc(its, sizeof(double));
+        double *R = (double *)calloc(its, sizeof(double));
+        metro_result = metropolis(its, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, metro_result_eq.Etot, r, U, C_V, P, R, N_atoms);
 
-        for (int i = 0; i < N_atoms; i++)
-        {
-            if (atoms[i] == 0 && i < 1000)
+        lat_props = lattice_props(atoms, neighbors, N_atoms);
+        fprintf(fp_P_r, "%f, %i, %i, %f, %f\n", T, lat_props.N_Cu_A, lat_props.N_CuZn, (double)metro_result.accepted / its, (double)metro_result_eq.accepted / its_eq);
+
+        double U_avg= average(U, metro_result.accepted);
+        fprintf(fp_U, "%f, %f, %f, %f\n", T, U_avg, (double)metro_result.accepted / its, (double)metro_result_eq.accepted / its_eq);
+
+        if (T == 700)
+        {   
+            sprintf(filename, "data/task_3/test.csv");
+            FILE *fp_test = fopen(filename, "w");
+            fprintf(fp_test, "%i\n", metro_result.accepted);
+            for (int i = 0; i < its; i++)
             {
-                N_Zn_A++;
+                fprintf(fp_test, "%f, %f, %f, %f\n", U[i], C_V[i], P[i], R[i]);
             }
-            else if (atoms[i] == 1 && i < 1000)
-            {
-                N_Cu_A++;
+
+            sprintf(filename, "data/task_3/auto_corr.csv");
+            FILE *fp_auto_corr = fopen(filename, "w");
+            fprintf(fp_auto_corr, "U, C_V, P, R\n");
+
+            sprintf(filename, "data/task_3/blocking.csv");
+            FILE *fp_blocking = fopen(filename, "w");
+            fprintf(fp_blocking, "U, C_V, P, R\n");
+            for (int i = 0; i < 5000; i+=1)
+            {   
+                addition_with_constant(U, U, -average(U, metro_result.accepted), metro_result.accepted);
+                addition_with_constant(C_V, C_V, -average(C_V, metro_result.accepted), metro_result.accepted);
+                addition_with_constant(P, P, -average(P, metro_result.accepted), metro_result.accepted);
+                addition_with_constant(R, R, -average(R, metro_result.accepted), metro_result.accepted);
+                fprintf(fp_auto_corr, "%f, %f, %f, %f\n", autocorrelation(U, metro_result.accepted, i), autocorrelation(C_V, metro_result.accepted, i), autocorrelation(P, metro_result.accepted, i), autocorrelation(R, metro_result.accepted, i));
             }
-            else if (atoms[i] == 0 && i >= 1000)
+            for (int b = 1; b < metro_result.accepted*0.25; b+=1)
             {
-                N_Zn_B++;
-            }
-            else if (atoms[i] == 1 && i >= 1000)
-            {
-                N_Cu_B++;
+                fprintf(fp_blocking, "%i, %f, %f, %f, %f\n", b, block_average(U, metro_result.accepted, b), block_average(C_V, metro_result.accepted, b), block_average(P, metro_result.accepted, b), block_average(R, metro_result.accepted, b));
             }
         }
-        fprintf(fp_P, "%f, %i, %i, %i, %i, %f, %f\n", T, N_Cu_A, N_Zn_A, N_Cu_B, N_Zn_B, (double)metro_result.accepted / its, (double)metro_result_eq.accepted / its_eq);
-
-        double *U_trimmed = (double *)calloc(metro_result.accepted, sizeof(double));
-        for (int i = 0; i < metro_result.accepted; i++)
-        {
-            U_trimmed[i] = U[i];
-        }
-        fprintf(fp_U, "%f, %f, %f, %f\n", T, average(U_trimmed, metro_result.accepted), (double)metro_result.accepted / its, (double)metro_result_eq.accepted / its_eq);
-
+        
         free(U);
-        free(U_trimmed);
+        free(C_V);
+        free(P);
+        free(R);
         destroy_2D_array(sub_A);
         destroy_2D_array(sub_B);
         destroy_2D_array((double **)neighbors);
@@ -219,7 +238,7 @@ run(int argc, char *argv[])
     }
 
     fclose(fp_U);
-    fclose(fp_P);
+    fclose(fp_P_r);
     gsl_rng_free(r);
 
     return 0;
@@ -295,10 +314,12 @@ nearest_neighbors_bcc(double **pos_A, double **pos_B, int N_atoms,
 }
 
 metro
-metropolis(int its, int *N, int **neighbors, double k_B, double T, double E_cucu, 
-           double E_znzn, double E_cuzn, double E_tot, gsl_rng *r, FILE *fp, double *U)
+metropolis(int its, int *atoms, int **neighbors, double k_B, double T, double E_cucu, 
+           double E_znzn, double E_cuzn, double E_tot, gsl_rng *r, double *U, 
+           double *C_V, double *P, double *R, int N_atoms)
 {   
     metro metro_result;
+    atom_count lat_props;
     idx index;
     double E;
     double E_prime;
@@ -307,38 +328,38 @@ metropolis(int its, int *N, int **neighbors, double k_B, double T, double E_cucu
     int accepted = 0;
     for (int i = 0; i < its; i++)
     {   
-        index = swappie(N, r);
+        index = swappy(atoms, r);
         int A = index.alpha; // Index of the atom in sub_A
         int B = index.beta; // Index of the atom in sub_B
         int value_A = index.valueA;
         int value_B = index.valueB;
-        E = energy_bond(index, N, neighbors, E_cucu, E_znzn, E_cuzn);
-        N[A] = value_B;
-        N[B] = value_A;
-        E_prime = energy_bond(index, N, neighbors, E_cucu, E_znzn, E_cuzn);
+        E = energy_bond(index, atoms, neighbors, E_cucu, E_znzn, E_cuzn);
+        atoms[A] = value_B;
+        atoms[B] = value_A;
+        E_prime = energy_bond(index, atoms, neighbors, E_cucu, E_znzn, E_cuzn);
         delta_E = E_prime - E;
         alpha = exp(-delta_E / k_B / T);
         if (gsl_rng_uniform(r) < alpha)
         {   
             accepted++;
             E_tot += delta_E;
-            if (fp != NULL)
-            {
-                fprintf(fp, "%i, %f\n", accepted, E_tot);
-            }
             if (U != NULL)
             {   
                 U[accepted-1] = E_tot;
+                if (T == 700 && C_V != NULL)
+                {
+                    double U_fluct = variance(U, accepted);
+                    C_V[accepted-1] = U_fluct / k_B / T / T;
+                    lat_props = lattice_props(atoms, neighbors, N_atoms);
+                    P[accepted-1] = (2. * lat_props.N_Cu_A / (N_atoms / 2) - 1);
+                    R[accepted-1] = (lat_props.N_CuZn - 4. * N_atoms / 2) / (4 * N_atoms / 2);
+                }
             }
         }
         else
         {    
-            if (fp != NULL)
-            {
-                fprintf(fp, "%i, %f\n", accepted, E_tot);
-            }
-            N[A] = value_A;
-            N[B] = value_B;
+            atoms[A] = value_A;
+            atoms[B] = value_B;
         }
     }
     metro_result.accepted = accepted;
@@ -348,17 +369,17 @@ metropolis(int its, int *N, int **neighbors, double k_B, double T, double E_cucu
 }
 
 idx
-swappie(int *N, gsl_rng *r)
+swappy(int *atoms, gsl_rng *r)
 {   
     idx index;
     int idx_1 = (int)(1999 * gsl_rng_uniform(r));
-    int A = N[idx_1];
+    int A = atoms[idx_1];
     int idx_2 = (int)(1999 * gsl_rng_uniform(r));
-    int B = N[idx_2];
+    int B = atoms[idx_2];
     while (A == B)
     {
         idx_2 = (int)(1999 * gsl_rng_uniform(r));
-        B = N[idx_2];
+        B = atoms[idx_2];
     }
     index.alpha = idx_1;
     index.beta = idx_2;
@@ -369,25 +390,23 @@ swappie(int *N, gsl_rng *r)
 }
 
 double
-energy_bond(idx index, int *N, int **neighbors, 
+energy_bond(idx index, int *atoms, int **neighbors, 
             double E_cucu, double E_znzn, double E_cuzn)
 {   
     double E = 0.;
     int atom_1_idx = index.alpha;
     int atom_2_idx = index.beta;
-    int atom_1 = N[atom_1_idx];
-    int atom_2 = N[atom_2_idx];
-    // int *neighbors_A = neigh_A[A];
-    // int *neighbors_B = neigh_B[B];
+    int atom_1 = atoms[atom_1_idx];
+    int atom_2 = atoms[atom_2_idx];
     int *neighbors_1 = neighbors[atom_1_idx];
     int *neighbors_2 = neighbors[atom_2_idx];
     for (int i = 0; i < 8; i++)
     {
-        if (N[neighbors_1[i]] == 1 && atom_1 == 1)
+        if (atoms[neighbors_1[i]] == 1 && atom_1 == 1)
         {
             E += E_cucu;
         }
-        else if (N[neighbors_1[i]] == 0 && atom_1 == 0)
+        else if (atoms[neighbors_1[i]] == 0 && atom_1 == 0)
         {
             E += E_znzn;
         }
@@ -398,11 +417,11 @@ energy_bond(idx index, int *N, int **neighbors,
     }
     for (int i = 0; i < 8; i++)
     {
-        if (N[neighbors_2[i]] == 1 && atom_2 == 1)
+        if (atoms[neighbors_2[i]] == 1 && atom_2 == 1)
         {
             E += E_cucu;
         }
-        else if (N[neighbors_2[i]] == 0 && atom_2 == 0)
+        else if (atoms[neighbors_2[i]] == 0 && atom_2 == 0)
         {
             E += E_znzn;
         }
@@ -416,11 +435,11 @@ energy_bond(idx index, int *N, int **neighbors,
 }
 
 void
-lattice_to_files(FILE *fp_atoms, FILE *fp_neighbors, int *N, int **neighbors, int N_atoms)
+lattice_to_files(FILE *fp_atoms, FILE *fp_neighbors, int *atoms, int **neighbors, int N_atoms)
 {
     for (int i = 0; i < N_atoms; i++)
     {
-        fprintf(fp_atoms, "%i\n", N[i]);
+        fprintf(fp_atoms, "%i\n", atoms[i]);
         for (int j = 0; j < 8; j++)
         {   
             if (j == 7)
@@ -433,4 +452,35 @@ lattice_to_files(FILE *fp_atoms, FILE *fp_neighbors, int *N, int **neighbors, in
             }
         }
     }
+}
+
+atom_count
+lattice_props(int *atoms, int **neighbors, int N_atoms)
+{
+    atom_count count;
+    int N_Cu_A = 0;
+    int N_CuZn = 0;
+    for (int i = 0; i < N_atoms / 2; i++)
+    {
+        if (atoms[i] == 1)
+        {
+            N_Cu_A++;
+        }
+        int atom = atoms[i];
+        for (int j = 0; j < 8; j++)
+        {
+            if (atom == 1 && atoms[neighbors[i][j]] == 0)
+            {
+                N_CuZn++;
+            }
+            else if (atom == 0 && atoms[neighbors[i][j]] == 1)
+            {
+                N_CuZn++;
+            }
+        }
+    }
+    count.N_Cu_A = N_Cu_A;
+    count.N_CuZn = N_CuZn;
+
+    return count;
 }
