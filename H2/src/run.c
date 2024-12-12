@@ -151,14 +151,6 @@ run(int argc, char *argv[])
     metro metro_result_eq;
     atom_count lat_props;
     
-    // sprintf(filename, "data/task_3/U.csv");
-    // FILE *fp_U = fopen(filename, "w");
-    // fprintf(fp_U, "T, U, Accepted ratio, Accepted ratio equilibrium\n");
-
-    // sprintf(filename, "data/task_3/P_r.csv");
-    // FILE *fp_P_r = fopen(filename, "w");
-    // fprintf(fp_P_r, "T, N_Cu_A, N_CuZn, Accepted ratio, Accepted ratio equilibrium\n");
-
     sprintf(filename, "data/task_3/data.csv");
     FILE *fp_data = fopen(filename, "w");
     fprintf(fp_data, "T, U, C_V, P, r, Accepted ratio, Accepted ratio equilibrium\n");
