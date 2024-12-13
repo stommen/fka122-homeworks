@@ -52,7 +52,7 @@ run(int argc, char *argv[])
     double closest_distance_bcc = sqrt(3) * a / 2;
     int L = 10;
     int N_atoms = 2 * L * L * L;
-    double E_initial = 2000*E_cuzn;
+    double E_initial = N_atoms / 2 * E_cuzn * 8;
     char filename[100];
     gsl_rng *r = init_gsl_rng(19);
 
@@ -161,7 +161,7 @@ run(int argc, char *argv[])
     {   
         if (T < 600)
         {
-            its_eq = 300000;
+            its_eq = 200000;
         }
         else
         {
@@ -199,15 +199,12 @@ run(int argc, char *argv[])
         double *P = (double *)calloc(its, sizeof(double));
         double *R = (double *)calloc(its, sizeof(double));
         metro_result = metropolis(its, atoms, neighbors, k_B, T, E_cucu, E_znzn, E_cuzn, metro_result_eq.Etot, r, U, C_V, P, R, N_atoms, NULL);
-
         lat_props = lattice_props(atoms, neighbors, N_atoms);
-        // fprintf(fp_P_r, "%f, %i, %i, %f, %f\n", T, lat_props.N_Cu_A, lat_props.N_CuZn, (double)metro_result.accepted / its, (double)metro_result_eq.accepted / its_eq);
 
         double U_avg= average(U, metro_result.accepted);
         double C_V_inst = variance(U, metro_result.accepted) / k_B / T / T;
         double p = (2. * lat_props.N_Cu_A / (N_atoms / 2) - 1);
         double Rr = (lat_props.N_CuZn - 4. * N_atoms / 2) / (4 * N_atoms / 2);
-        // fprintf(fp_U, "%f, %f, %f, %f, %f\n", T, U_avg, C_V_inst, (double)metro_result.accepted / its, (double)metro_result_eq.accepted / its_eq);
         fprintf(fp_data, "%f, %f, %f, %f, %f, %f, %f\n", T, U_avg, C_V_inst, p, Rr, (double)metro_result.accepted / its, (double)metro_result_eq.accepted / its_eq);
 
     //     if ((int)T % 100 == 0 && T < 1001)
