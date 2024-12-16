@@ -32,7 +32,7 @@ run(int argc, char *argv[])
                     4.05, 4.055, 4.06, 4.065, 4.07, 4.075, 4.08};
 
     // Energy file
-    const char *filename = "data/task_1/energies.csv";
+    char *filename = "data/task_1/energies.csv";
     FILE *fp = fopen(filename, "w");
 
     // Iterate over the lattice parameters and calculate the energy
@@ -313,8 +313,6 @@ verlet(double **positions, double **velocities, double **forces, int its, int it
 
             // Calculate the radial distribution
             radial_dist(bins, positions, N_bins, bin_width, N, L);
-            // Normalize the radial distribution, averaging over the number of atoms
-            multiplication_with_constant(bins, bins, 1. / (N - 1), N_bins);
 
             // Write the radial distribution to the file
             for (int j = 0; j < N_bins; j++)
@@ -393,11 +391,11 @@ radial_dist(double *bins, double **positions, int N_bins, double bin_width, int 
             }
         }
     }
-    // Normalize the bins
     for (int l = 0; l < N_bins; l++)
     {   
+        bins[l] /= (N - 1); // Average over the number of atoms
         norm_factor = (N - 1) * 4 * M_PI * (3 * pow((l + 1), 2) - 3 * (l + 1) + 1) * pow(bin_width, 3) / 3 / V;
-        bins[l] /= norm_factor;
+        bins[l] /= norm_factor; // Apply the scale factor
     }
 }
 
