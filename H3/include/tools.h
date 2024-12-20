@@ -58,6 +58,12 @@ multiplication_with_constant(
                              double constant,
                              unsigned int len);
 
+
+
+int
+int_sum(int *v, int len);
+
+
 /* **********************************************
  *
  * Calculate the dot product between
