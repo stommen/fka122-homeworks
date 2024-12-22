@@ -18,7 +18,7 @@ run(
 {
     int N_sprinters = 200;
     // double E0 = 3./8.;
-    double dtau = 0.02; double tau = 350.;
+    double dtau = 0.02; double tau = 10000.;
     int N_its = tau / dtau;
     double E_T = 0.5;
     gsl_rng *U = init_gsl_rng(19);
@@ -27,7 +27,7 @@ run(
     double* walkmen_pos = (double*)calloc(N_sprinters * 10, sizeof(double));
     init_walkmen(walkmen_pos,N_sprinters);
 
-    FILE* fp = fopen("E_T_non_eq.csv","w");
+    FILE* fp = fopen("ET_Nwalk_non_eq.csv","w");
 
     for(int i = 0; i < N_its ; i++)
     {
@@ -41,7 +41,7 @@ run(
         int* num_walkers = (int*)calloc(N_sprinters, sizeof(int));
         for(int j = 0; j< N_sprinters;j++)
         {
-            int m = (int) (weight(dtau,E_T,walkmen_pos[j]) + gsl_rng_uniform(U) * 1.);
+            int m = (int)   (weight(dtau,E_T,walkmen_pos[j]) + gsl_rng_uniform(U) * 1.);
             num_walkers[j] = m;
             //printf("m %i\t W %f\t x %f \n",num_walkers[j],weight(dtau,E_T,walkmen_pos[j]), walkmen_pos[j]);
         }
@@ -69,7 +69,7 @@ run(
             //printf("M %i\t j %i\n",M,j);
         }
 
-        // generate new positions, x' = x - sqrt(tau)*G
+        // generate new positions, x' = x + sqrt(dtau)*G
         for(int j = 0; j < N_sprinters_1;j++)
         {
             walkmen_pos[j] = walkmen_pos_new[j] + gsl_ran_gaussian(U, 1.) * sqrt(dtau); 
@@ -81,8 +81,8 @@ run(
         double sprinter_ratio = (double)N_sprinters_1 / (double)N_sprinters;
         E_T -= gamma * log(sprinter_ratio);
         
-        // N_sprinters = N_sprinters_1;
-        fprintf(fp,"%lf,%i\n",E_T,N_sprinters_1);
+        fprintf(fp,"%lf,%i,%i\n",E_T,N_sprinters_1,(100 * N_sprinters_1) / N_sprinters);
+        N_sprinters = N_sprinters_1;
     }
     fclose(fp);
 
