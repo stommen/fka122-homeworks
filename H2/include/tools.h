@@ -1,5 +1,8 @@
 #pragma once
 #include <stdio.h>
+#include <gsl/gsl_fft_real.h>
+#include <gsl/gsl_fft_halfcomplex.h>
+
 /* **********************************************
  *
  * Add v1 and v2 elementwise

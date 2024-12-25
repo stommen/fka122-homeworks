@@ -38,7 +38,9 @@ typedef struct
 * A pointer to the random number generator
 *
 * ******************************************************************************** */ 
-gsl_rng * init_gsl_rng(int seed);
+gsl_rng * init_gsl_rng(
+                       int seed
+                      );
 
 /* **********************************************************************************
 *
@@ -57,7 +59,12 @@ gsl_rng * init_gsl_rng(int seed);
 * The distance between the vectors
 *
 * ******************************************************************************** */
-double boundary_distance_between_vectors(double *v1, double *v2, int dim, double box_length);
+double boundary_distance_between_vectors(
+                                         double *v1, 
+                                         double *v2, 
+                                         int dim, 
+                                         double box_length
+                                        );
 
 /* **********************************************************************************
 *
@@ -74,9 +81,14 @@ double boundary_distance_between_vectors(double *v1, double *v2, int dim, double
 * closest_distance - the closest distance between atoms
 *
 * ******************************************************************************** */
-void nearest_neighbors_bcc(double **pos_A, double **pos_B, int N_atoms,
-                           int **neighbors, double box_length,
-                           double cutoff, double closest_distance);
+void nearest_neighbors_bcc(double **pos_A, 
+                           double **pos_B, 
+                           int N_atoms,
+                           int **neighbors, 
+                           double box_length,
+                           double cutoff, 
+                           double closest_distance
+                          );
 
 /* **********************************************************************************
 *
@@ -106,9 +118,24 @@ void nearest_neighbors_bcc(double **pos_A, double **pos_B, int N_atoms,
 * The results of the Metropolis algorithm (number of accepted swaps, total energy, and number of iterations)
 *
 * ******************************************************************************** */
-metro metropolis(int its, int *atoms, int **neighbors, double k_B, double T, double E_cucu, 
-                 double E_znzn, double E_cuzn, double E_tot, gsl_rng *r, 
-                 double *C_V, double *U, double *P, double *R, int N_atoms, FILE *fp);
+metro metropolis(
+                 int its, 
+                 int *atoms, 
+                 int **neighbors, 
+                 double k_B, 
+                 double T, 
+                 double E_cucu, 
+                 double E_znzn, 
+                 double E_cuzn, 
+                 double E_tot, 
+                 gsl_rng *r, 
+                 double *C_V, 
+                 double *U, 
+                 double *P, 
+                 double *R, 
+                 int N_atoms, 
+                 FILE *fp
+                );
 
 /* **********************************************************************************
 *
@@ -124,7 +151,10 @@ metro metropolis(int its, int *atoms, int **neighbors, double k_B, double T, dou
 * The indices and values of the atoms to swap
 *
 * ******************************************************************************** */
-idx swappy(int *atoms, gsl_rng *r);
+idx swappy(
+           int *atoms, 
+           gsl_rng *r
+          );
 
 /* **********************************************************************************
 *
@@ -144,8 +174,14 @@ idx swappy(int *atoms, gsl_rng *r);
 * The energy of the system after swapping two atoms
 *
 * ******************************************************************************** */
-double energy_bond(idx index, int *atoms, int **neighbors,
-                   double E_cucu, double E_znzn, double E_cuzn);
+double energy_bond(
+                   idx index, 
+                   int *atoms, 
+                   int **neighbors,
+                   double E_cucu, 
+                   double E_znzn, 
+                   double E_cuzn
+                  );
 
 /* **********************************************************************************
 *
@@ -162,7 +198,11 @@ double energy_bond(idx index, int *atoms, int **neighbors,
 * The number of Cu atoms and the number of Cu-Zn bonds in sublattice A
 *
 * ******************************************************************************** */
-atom_count lattice_props(int *atoms, int **neighbors, int N_atoms);
+atom_count lattice_props(
+                         int *atoms, 
+                         int **neighbors, 
+                         int N_atoms
+                        );
 
 /* **********************************************************************************
 *
@@ -177,4 +217,10 @@ atom_count lattice_props(int *atoms, int **neighbors, int N_atoms);
 * N_atoms - the number of atoms in the supercell
 *
 * ******************************************************************************** */
-void lattice_to_files(FILE *fp_atoms, FILE *fp_neighbors, int *atoms, int **neighbors, int N_atoms);
+void lattice_to_files(
+                      FILE *fp_atoms, 
+                      FILE *fp_neighbors, 
+                      int *atoms, 
+                      int **neighbors, 
+                      int N_atoms
+                     );

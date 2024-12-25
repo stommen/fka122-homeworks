@@ -6,7 +6,10 @@
 #include "run.h"
 
 int
-run(int argc, char *argv[])
+run(
+    int argc, 
+    char *argv[]
+   )
 {
     // ------------------------------- Constants --------------------------------- //
 
@@ -238,7 +241,10 @@ run(int argc, char *argv[])
 }
 
 gsl_rng *
-init_gsl_rng(int seed){
+init_gsl_rng(
+             int seed
+            )
+{
     const gsl_rng_type * T;
     gsl_rng * r;
     gsl_rng_env_setup();
@@ -257,7 +263,12 @@ init_gsl_rng(int seed){
 }
 
 double
-boundary_distance_between_vectors(double *v1, double *v2, int dim, double box_length)
+boundary_distance_between_vectors(
+                                  double *v1, 
+                                  double *v2, 
+                                  int dim, 
+                                  double box_length
+                                 )
 {
     double r = 0.0;
     double delta;
@@ -273,9 +284,15 @@ boundary_distance_between_vectors(double *v1, double *v2, int dim, double box_le
 }
 
 void
-nearest_neighbors_bcc(double **pos_A, double **pos_B, int N_atoms, 
-                      int **neighbors, double box_length, 
-                      double cutoff, double closest_distance)
+nearest_neighbors_bcc(
+                      double **pos_A, 
+                      double **pos_B, 
+                      int N_atoms, 
+                      int **neighbors, 
+                      double box_length, 
+                      double cutoff, 
+                      double closest_distance
+                     )
 {
     double r; // Distance between atoms
     // Loop over all atoms in sublattice A
@@ -314,9 +331,24 @@ nearest_neighbors_bcc(double **pos_A, double **pos_B, int N_atoms,
 }
 
 metro
-metropolis(int its, int *atoms, int **neighbors, double k_B, double T, double E_cucu, 
-           double E_znzn, double E_cuzn, double E_tot, gsl_rng *r, double *U, 
-           double *C_V, double *P, double *R, int N_atoms, FILE *fp)
+metropolis(
+           int its, 
+           int *atoms, 
+           int **neighbors, 
+           double k_B, 
+           double T, 
+           double E_cucu, 
+           double E_znzn, 
+           double E_cuzn, 
+           double E_tot, 
+           gsl_rng *r, 
+           double *U, 
+           double *C_V, 
+           double *P, 
+           double *R, 
+           int N_atoms, 
+           FILE *fp
+          )
 {   
     metro metro_result;
     atom_count lat_props;
@@ -385,7 +417,10 @@ metropolis(int its, int *atoms, int **neighbors, double k_B, double T, double E_
 }
 
 idx
-swappy(int *atoms, gsl_rng *r)
+swappy(
+       int *atoms, 
+       gsl_rng *r
+      )
 {   
     idx index;
     int idx_1 = (int)(1999 * gsl_rng_uniform(r)); // Random index for atom A
@@ -408,8 +443,14 @@ swappy(int *atoms, gsl_rng *r)
 }
 
 double
-energy_bond(idx index, int *atoms, int **neighbors, 
-            double E_cucu, double E_znzn, double E_cuzn)
+energy_bond(
+            idx index, 
+            int *atoms, 
+            int **neighbors, 
+            double E_cucu, 
+            double E_znzn, 
+            double E_cuzn
+           )
 {   
     double E = 0.; // Energy
     int atom_1_idx = index.alpha; // Index of atom A
@@ -457,7 +498,11 @@ energy_bond(idx index, int *atoms, int **neighbors,
 }
 
 atom_count
-lattice_props(int *atoms, int **neighbors, int N_atoms)
+lattice_props(
+              int *atoms, 
+              int **neighbors, 
+              int N_atoms
+             )
 {
     atom_count count;
     int N_Cu_A = 0; // Number of Cu atoms in sublattice A
@@ -493,7 +538,13 @@ lattice_props(int *atoms, int **neighbors, int N_atoms)
 }
 
 void
-lattice_to_files(FILE *fp_atoms, FILE *fp_neighbors, int *atoms, int **neighbors, int N_atoms)
+lattice_to_files(
+                 FILE *fp_atoms, 
+                 FILE *fp_neighbors, 
+                 int *atoms, 
+                 int **neighbors, 
+                 int N_atoms
+                )
 {
     for (int i = 0; i < N_atoms; i++)
     {
@@ -511,4 +562,3 @@ lattice_to_files(FILE *fp_atoms, FILE *fp_neighbors, int *atoms, int **neighbors
         }
     }
 }
-
