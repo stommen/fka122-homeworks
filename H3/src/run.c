@@ -16,18 +16,23 @@ run(
     char *argv[]
    )
 {
-    int N_sprinters = 200;
+    int N0 = 200;
+    int N_sprinters = N0;
     // double E0 = 3./8.;
-    double dtau = 0.02; double tau = 10000.;
+    double dtau = 0.02; double tau = 25000.;
     int N_its = tau / dtau;
     double E_T = 0.5;
     gsl_rng *U = init_gsl_rng(19);
     double gamma = 0.5;
+    int its_eq = (tau /10.) / dtau;
+    double ET_avg = 0;
 
     double* walkmen_pos = (double*)calloc(N_sprinters * 10, sizeof(double));
     init_walkmen(walkmen_pos,N_sprinters);
 
-    FILE* fp = fopen("ET_Nwalk_non_eq.csv","w");
+    FILE* fpET = fopen("ET_Nwalk_non_eq.csv","w");
+    FILE* fpw = fopen("I_was_walkin_in_morse.csv","w");
+
 
     for(int i = 0; i < N_its ; i++)
     {
@@ -73,19 +78,39 @@ run(
         for(int j = 0; j < N_sprinters_1;j++)
         {
             walkmen_pos[j] = walkmen_pos_new[j] + gsl_ran_gaussian(U, 1.) * sqrt(dtau); 
-        }   
-
-        free(walkmen_pos_new);
+            if(i > its_eq)
+            {
+                fprintf(fpw,"%lf,\t",walkmen_pos[j]);
+            }
+        }  
+        if(i > its_eq)
+        {
+            fprintf(fpw,"\n");
+        }
 
         // Updating ET
-        double sprinter_ratio = (double)N_sprinters_1 / (double)N_sprinters;
-        E_T -= gamma * log(sprinter_ratio);
-        
-        fprintf(fp,"%lf,%i,%i\n",E_T,N_sprinters_1,(100 * N_sprinters_1) / N_sprinters);
-        N_sprinters = N_sprinters_1;
-    }
-    fclose(fp);
+        double sprinter_ratio = (double)N_sprinters_1 / (double)N0;
 
+        if(i > its_eq)
+        {
+            int j = i - its_eq;
+            //printf("ET_avg = %f\n",ET_avg);
+            E_T = ET_avg - gamma * log(sprinter_ratio);
+            ET_avg = (ET_avg * j + E_T) / (j + 1);
+
+            fprintf(fpET,"%lf,%i,%f\n",E_T,N_sprinters_1,(100. * (double)N_sprinters_1) / (double)N_sprinters);
+        }
+        else
+        {
+            E_T -= gamma * log(sprinter_ratio);
+        }
+        N_sprinters = N_sprinters_1;
+        free(walkmen_pos_new);
+        free(num_walkers);
+    }
+    fclose(fpET);
+    fclose(fpw);
+    
     return 0;
 }
 
@@ -111,7 +136,7 @@ Mooooooorse(double x)
 double
 weight(double dtau,double ET, double x)
 {
-    double W = exp(-(Mooooooorse(x) - ET) * dtau);
+    double W = exp((ET - Mooooooorse(x)) * dtau);
     return W;
 }
 
