@@ -19,12 +19,12 @@ run(
     int N0 = 200;
     int N_sprinters = N0;
     // double E0 = 3./8.;
-    double dtau = 0.02; double tau = 5000.;
+    double dtau = 0.02; double tau = 30000.;
     int N_its = tau / dtau;
     double E_T = 0.5;
     gsl_rng *U = init_gsl_rng(19);
     double gamma = 0.5;
-    int its_eq = (tau /20.) / dtau;
+    int its_eq = 20 / dtau;
     double ET_avg = 0;
 
     double* walkmen_pos = (double*)calloc(N_sprinters * 100, sizeof(double));
@@ -112,15 +112,15 @@ run(
             walkmen_pos[j] = walkmen_pos_new[j] + gsl_ran_gaussian(U, 1.) * sqrt(dtau); 
 
 
-            if(i > its_eq)
+            if(i > 9 * N_its / 10)
             {
-                fprintf(fpw,"%lf,\t",walkmen_pos[j]);
+            fprintf(fpw,"%lf,\n",walkmen_pos[j]);
             }
         }  
-        if(i > its_eq)
-        {
-            fprintf(fpw,"\n");
-        }
+        // if(i > its_eq)
+        // {
+        //     fprintf(fpw,"\n");
+        // }
 
         // Updating ET
         double sprinter_ratio = (double)N_sprinters_1 / (double)N0  ;
