@@ -5,10 +5,43 @@
 #include <gsl/gsl_randist.h>
 #include "tools.h"
 
+double DMC(
+           double* walkmen_pos,
+           int N_its,
+           int N_0,
+           double dtau,
+           double tau,
+           double E_T_start,
+           gsl_rng *U,
+           double gamma,
+           FILE *fp_ET,
+           FILE *fp_w
+          );
 
-double Mooooooorse(double x); void wavef_ground_state_anal(double *Psi,double *x, int n);
-double weight(double dtau,double ET, double x); 
-gsl_rng * init_gsl_rng(int seed); void init_walkmen(double* walkers, int N_walkers);
+double Mooooooorse(
+                   double x
+                  );
+
+void wavef_ground_state_anal(
+                             double *psi, 
+                             double *x, 
+                             int n
+                            );
+
+double weight(
+              double dtau, 
+              double ET, 
+              double x
+             ); 
+
+gsl_rng * init_gsl_rng(
+                       int seed
+                      ); 
+
+void init_walkmen(
+                  double *walkers, 
+                  int N_walkers
+                 );
 
 int
 run(
@@ -16,142 +49,124 @@ run(
     char *argv[]
    )
 {
-    int N0 = 200;
-    int N_sprinters = N0;
-    // double E0 = 3./8.;
-    double dtau = 0.02; double tau = 30000.;
+    // --------------------------------- Task 1a --------------------------------- //
+    int N_0 = 200;
+    double dtau = 0.02;
+    double tau = 5000;
     int N_its = tau / dtau;
-    double E_T = 0.5;
+    double E_T_start = 0.5;
     gsl_rng *U = init_gsl_rng(19);
     double gamma = 0.5;
     int its_eq = 20 / dtau;
-    double ET_avg = 0;
 
-    double* walkmen_pos = (double*)calloc(N_sprinters * 100, sizeof(double));
-    init_walkmen(walkmen_pos,N_sprinters);
+    double* walkmen_pos = (double*)calloc(N_0 * 100, sizeof(double));
+    init_walkmen(walkmen_pos, N_0);
 
-    FILE* fpET = fopen("ET_Nwalk_non_eq.csv","w");
-    FILE* fpw = fopen("I_was_walkin_in_morse.csv","w");
-    printf("eq %i\n",its_eq);
+    E_T_start = DMC(walkmen_pos, its_eq, N_0, dtau, tau, E_T_start, U, gamma, NULL, NULL);
 
+    FILE* fp_ET = fopen("data/task_1/ET_Nwalk_non_eq.csv","w");
+    FILE* fp_w = fopen("data/task_1/I_was_walkin_in_morse.csv","w");
 
-    for(int i = 0; i < N_its ; i++)
-    {
-        // printf("N_sprinters %i\n",N_sprinters);
-        // calculating m for each walker
-        // for(int j = 0; j < N_sprinters;j++)
-        // {
-        //     printf("walker_new %f \n",walkmen_pos[j]);
-        // } 
-            
-        int* num_walkers = (int*)calloc(N_sprinters, sizeof(int));
-        for(int j = 0; j< N_sprinters;j++)
-        {
-            //if(weight(dtau,E_T,walkmen_pos[j]) >= 1.)
-            //{
-                //printf("W(x) %i\n",(int)weight(dtau,E_T,walkmen_pos[j]));
-            int m = (int)(weight(dtau,E_T,walkmen_pos[j]) + gsl_rng_uniform(U) * 1.);
-            num_walkers[j] = m;
-            // }
-            // else
-            // {
-            //    num_walkers[j] = 0;
-            // }
-            //printf("m %i\t W %f\t x %f \n",num_walkers[j],weight(dtau,E_T,walkmen_pos[j]), walkmen_pos[j]);
-        }
-        // number of surviving walkers
-        int N_sprinters_1 = int_sum(num_walkers, N_sprinters);
-        //printf("N %i\n",(N_sprinters_1));
+    DMC(walkmen_pos, N_its, N_0, dtau, tau, E_T_start, U, gamma, fp_ET, fp_w);
 
-        // Giving birth to new walkers 
-        double* walkmen_pos_new = (double*)malloc(N_sprinters_1 * sizeof(double));
-        //int shift = 0;
-        // for(int j = 0; j < N_sprinters;j++)
-        // {
-        //     if(num_walkers[j] == 0)
-        //      {
-        //         shift -= 1;
-        //     }
-        //     else if(num_walkers[j] == 1)
-        //     {
-        //         for(int m = 0; m < num_walkers[j];m++)
-        //         {
-        //             walkmen_pos_new[j+shift] = walkmen_pos[j];
-        //         } 
-        //     }     
-        //     else if(num_walkers[j] > 1)
-        //     {
-        //         for(int m = 0; m < num_walkers[j];m++)
-        //         {
-        //             walkmen_pos_new[j+shift] = walkmen_pos[j];
-        //             shift += 1;
-        //         }      
-        //     }
-        //     //printf("Shift %i\t N_new - N %i\n",shift,N_sprinters_1 - N_sprinters);
-        // }
-        // Allocate memory for the new walkers
-        //double* walkmen_pos_new = (double*)malloc(N_sprinters_1 * sizeof(double));
+    free(walkmen_pos);
+    fclose(fp_ET);
+    fclose(fp_w);
 
-        // Index for the new array
-        int M = 0;
-        // Populate the new array with the walkers
-        for (int j = 0; j < N_sprinters; j++) 
-        {
-            // If the walker survives (num_walkers[j] > 0)
-            for (int m = 0; m < num_walkers[j]; m++) {
-                walkmen_pos_new[M] = walkmen_pos[j]; // Copy walker's position
-                M++; // Increment the new array index
-            }
-        }
+    // --------------------------------- Task 1b --------------------------------- //
+    int N_0 = 1000;
+    double dtau = 0.01;
+    double tau = 5000;
+    int N_its = tau / dtau;
+    double E_T_start = 0.5;
+    gsl_rng *U = init_gsl_rng(19);
+    double gamma = 0.5;
+    int its_eq = 20 / dtau;
 
-        // generate new positions, x' = x + sqrt(dtau)*G
+    // --------------------------------- Task 2a --------------------------------- //
 
-        for(int j = 0; j < N_sprinters_1;j++)
-        {
-            walkmen_pos[j + M] = 0;
-            walkmen_pos[j] = walkmen_pos_new[j] + gsl_ran_gaussian(U, 1.) * sqrt(dtau); 
-
-
-            if(i > 9 * N_its / 10)
-            {
-            fprintf(fpw,"%lf,\n",walkmen_pos[j]);
-            }
-        }  
-        // if(i > its_eq)
-        // {
-        //     fprintf(fpw,"\n");
-        // }
-
-        // Updating ET
-        double sprinter_ratio = (double)N_sprinters_1 / (double)N0  ;
-
-        if(i >= its_eq)
-        {
-            int j = i - its_eq;
-            //printf("ET_avg = %f\n",ET_avg);
-            E_T = ET_avg - gamma * log(sprinter_ratio);
-            ET_avg = (ET_avg * j + E_T) / (j + 1);
-            //E_T = ET_avg;
-            //E_T -= gamma * log(sprinter_ratio);
-
-            fprintf(fpET,"%lf,%i,%f\n",ET_avg,N_sprinters_1,(100. * (double)N_sprinters_1) / (double)N_sprinters);
-        }
-        else
-        {
-            E_T -= gamma * log(sprinter_ratio);
-        }
-        N_sprinters = N_sprinters_1;
-        free(walkmen_pos_new);
-        free(num_walkers);
-    }
-    fclose(fpET);
-    fclose(fpw);
+    // --------------------------------- Task 2b --------------------------------- //
     
     return 0;
 }
 
+double 
+DMC(
+    double* walkmen_pos,
+    int N_its,
+    int N_0,
+    double dtau,
+    double tau,
+    double E_T_start,
+    gsl_rng *U,
+    double gamma,
+    FILE *fp_ET,
+    FILE *fp_w
+   )
+{
+    double E_T = E_T_start;
+    double E_T_avg = E_T_start;
+    int N_sprinters = N_0;
+
+    for(int i = 0; i < N_its ; i++)
+    {   
+        int *num_walkers = (int *)calloc(N_sprinters, sizeof(int));
+        for(int j = 0; j < N_sprinters; j++)
+        {   
+            int m = (int)(weight(dtau, E_T, walkmen_pos[j]) + gsl_rng_uniform(U) * 1.);
+            num_walkers[j] = m;
+        }
+        // Number of surviving walkers
+        int N_survived = int_sum(num_walkers, N_sprinters);
+
+        // Giving birth to new walkers 
+        double *walkmen_pos_new = (double *)malloc(N_survived * sizeof(double));
+
+        // Index for the new array
+        int M = 0;
+        // Populate the new array with the walkers
+        for (int k = 0; k < N_sprinters; k++) 
+        {
+            // If the walker survives (num_walkers[j] > 0)
+            for (int m = 0; m < num_walkers[k]; m++) {
+                walkmen_pos_new[M] = walkmen_pos[k]; // Copy walker's position
+                M++; // Increment the new array index
+            }
+        }
+
+        // Generate new positions, x' = x + sqrt(dtau)*G
+        for(int l = 0; l < N_survived; l++)
+        {
+            walkmen_pos[l] = walkmen_pos_new[l] + gsl_ran_gaussian(U, 1.) * sqrt(dtau); 
+            if (i > 9 * N_its / 10 && fp_w != NULL)
+            {
+                fprintf(fp_w,"%lf,\n", walkmen_pos[l]);
+            }
+        }  
+
+        // Updating ET
+        double sprinter_ratio = (double)N_survived / (double)N_0;
+        E_T = E_T_avg - gamma * log(sprinter_ratio); // E_T at i+1
+        E_T_avg = E_T / (i+1) + E_T_avg * i / (i+1); // E_T_avg at i+1
+
+        if (fp_ET != NULL)
+        {
+            fprintf(fp_ET, "%lf, %i, %f, %f\n", E_T_avg, N_survived, (100. * (double)N_survived) / (double)N_sprinters, E_T);
+        }
+        
+        N_sprinters = N_survived;
+        free(walkmen_pos_new);
+        free(num_walkers);
+    }
+
+    return E_T;
+}
+
 void
-init_walkmen(double* walkers, int N_walkers)
+init_walkmen(
+             double* walkers, 
+             int N_walkers
+            )
 {
     int j = 0;
     for(double i = -5; i < 5; i += 10./N_walkers)
@@ -162,7 +177,9 @@ init_walkmen(double* walkers, int N_walkers)
 }
 
 double
-Mooooooorse(double x)
+Mooooooorse(
+            double x
+           )
 {
     double V = 0.5 * pow((1  - exp(-x)),2);
     
@@ -170,23 +187,34 @@ Mooooooorse(double x)
 }
 
 double
-weight(double dtau,double ET, double x)
-{
+weight(
+       double dtau, 
+       double ET, 
+       double x
+      )
+{   
     double W = exp((ET - Mooooooorse(x)) * dtau);
     return W;
 }
 
 void
-wavef_ground_state_anal(double *Psi,double *x, int n)
+wavef_ground_state_anal(
+                        double *psi, 
+                        double *x, 
+                        int n
+                       )
 {
     for(int i = 0;i < n; i++)
     {
-        Psi[i] = sqrt(2.) * exp(-exp(-x[i]) - x[i]/2.);
+        psi[i] = sqrt(2.) * exp(-exp(-x[i]) - x[i]/2.);
     }
 }
 
 gsl_rng *
-init_gsl_rng(int seed){
+init_gsl_rng(
+             int seed
+            )
+{
     const gsl_rng_type * T;
     gsl_rng * r;
     gsl_rng_env_setup();
@@ -203,4 +231,3 @@ init_gsl_rng(int seed){
 
     return r;
 }
-
