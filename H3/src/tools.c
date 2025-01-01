@@ -34,7 +34,10 @@ elementwise_multiplication(
 }
 
 int
-int_sum(int *v,int len)
+int_sum(
+        int *v, 
+        int len
+       )
 {
     int sum = 0;
     for(int i = 0;i < len; i++)
