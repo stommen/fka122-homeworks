@@ -69,7 +69,7 @@ run(
         // for(int j = 0; j < N_sprinters;j++)
         // {
         //     if(num_walkers[j] == 0)
-        //     {
+        //      {
         //         shift -= 1;
         //     }
         //     else if(num_walkers[j] == 1)
