@@ -19,11 +19,11 @@ double DMC(
            int ndim
           );
 
-double mooooooorse(
+double morse(
                    double x
                   );
 
-void wavef_ground_state_anal(
+void wavef_ground_state_analytic(
                              double *psi, 
                              double *x, 
                              int n
@@ -137,7 +137,7 @@ DMC(
         {   
             if (ndim == 1)
             {
-                int m = (int)(weight(dtau, E_T, mooooooorse(walkmen_pos[j][0])) + gsl_rng_uniform(U) * 1.);
+                int m = (int)(weight(dtau, E_T, morse(walkmen_pos[j][0])) + gsl_rng_uniform(U) * 1.);
                 num_walkers[j] = m;
             }
             else if (ndim == 6)
@@ -151,10 +151,10 @@ DMC(
             }
         }
         // Number of surviving walkers
-        int N_survived = int_sum(num_walkers, N_sprinters);
+        int N_survivers = int_sum(num_walkers, N_sprinters);
 
         // Giving birth to new walkers 
-        double **walkmen_pos_new = create_2D_array(N_survived, ndim);
+        double **walkmen_pos_new = create_2D_array(N_survivers, ndim);
 
         // Index for the new array
         int M = 0;
@@ -173,7 +173,7 @@ DMC(
         }
 
         // Generate new positions, x' = x + sqrt(dtau)*G
-        for(int l = 0; l < N_survived; l++)
+        for(int l = 0; l < N_survivers; l++)
         {
             for (int n = 0; n < ndim; n++)
             {   
@@ -200,16 +200,16 @@ DMC(
         }  
 
         // Updating ET
-        double sprinter_ratio = (double)N_survived / (double)N_0;
+        double sprinter_ratio = (double)N_survivers / (double)N_0;
         E_T = E_T_avg - gamma * log(sprinter_ratio); // E_T at i+1
         E_T_avg = E_T / (i+1) + E_T_avg * i / (i+1); // E_T_avg at i+1
 
         if (fp_ET != NULL)
         {
-            fprintf(fp_ET, "%lf, %i, %f, %f\n", E_T_avg, N_survived, (100. * (double)N_survived) / (double)N_sprinters, E_T);
+            fprintf(fp_ET, "%lf, %i, %f, %f\n", E_T_avg, N_survivers, (100. * (double)N_survivers) / (double)N_sprinters, E_T);
         }
         
-        N_sprinters = N_survived;
+        N_sprinters = N_survivers;
         destroy_2D_array(walkmen_pos_new);
         free(num_walkers);
     }
@@ -250,7 +250,7 @@ init_walkmen_6D(
 }
 
 double
-mooooooorse(
+morse(
             double x
            )
 {
@@ -272,7 +272,7 @@ weight(
 }
 
 void
-wavef_ground_state_anal(
+wavef_ground_state_analytic(
                         double *psi, 
                         double *x, 
                         int n
