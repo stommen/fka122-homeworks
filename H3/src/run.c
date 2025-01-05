@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdbool.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include "tools.h"
@@ -36,6 +37,8 @@ double morse(
 
 double weight(
               double dtau, 
+              double E_T, 
+              double V
               double E_T, 
               double V
              ); 
@@ -86,6 +89,7 @@ run(
    )
 {
     // -------------------------------- Constants -------------------------------- //
+    // -------------------------------- Constants -------------------------------- //
     gsl_rng *U = init_gsl_rng(19);
     double gamma = 0.5;
     DMC_results results;
@@ -98,7 +102,19 @@ run(
     // int N_its = tau / dtau;
     // double E_T_start = 0.5;
     // int its_eq = 20 / dtau;
+    DMC_results results;
+    char filename[100];
 
+    // --------------------------------- Task 1a --------------------------------- //
+    // int N_0 = 200;
+    // double dtau = 0.02;
+    // double tau = 5000;
+    // int N_its = tau / dtau;
+    // double E_T_start = 0.5;
+    // int its_eq = 20 / dtau;
+
+    // double **walkmen_pos = create_2D_array(N_0 * 100, 1);
+    // init_walkmen_1D(walkmen_pos, N_0);
     // double **walkmen_pos = create_2D_array(N_0 * 100, 1);
     // init_walkmen_1D(walkmen_pos, N_0);
 
@@ -115,12 +131,15 @@ run(
     // free(walkmen_pos);
     // fclose(fp_ET);
     // fclose(fp_w);
+    // free(walkmen_pos);
+    // fclose(fp_ET);
+    // fclose(fp_w);
 
     // --------------------------------- Task 1b --------------------------------- //
     int N_0 = 1000;
     int N_sprinters_init = N_0;
     double dtau = 0.01;
-    double tau = 5000;
+    double tau = 1000;
     int N_its = tau / dtau;
     double E_T_start_init = -3;
     int its_eq = 100 / dtau;
@@ -192,15 +211,21 @@ run(
 }
 
 DMC_results
+DMC_results
 DMC(
     int N_its,
     int N_0,
+    int N_sprinters,
     int N_sprinters,
     double dtau,
     double E_T_start,
     gsl_rng *U,
     double gamma,
     FILE *fp_ET,
+    FILE *fp_w,
+    int ndim,
+    bool IS,
+    int decomp
     FILE *fp_w,
     int ndim,
     bool IS,
@@ -269,6 +294,12 @@ DMC(
                 {
                     walkmen_pos_new[M][n] = walkmen_pos[k][n]; // Copy walker's position
                 }
+            for (int m = 0; m < num_walkers[k]; m++)
+            {   
+                for(int n = 0; n < ndim; n++)
+                {
+                    walkmen_pos_new[M][n] = walkmen_pos[k][n]; // Copy walker's position
+                }
                 M++; // Increment the new array index
             }
         }
@@ -284,11 +315,13 @@ DMC(
 
         // Updating ET
         double sprinter_ratio = (double)N_survivers / (double)N_0;
+        double sprinter_ratio = (double)N_survivers / (double)N_0;
         E_T = E_T_avg - gamma * log(sprinter_ratio); // E_T at i+1
         E_T_avg = E_T / (i+1) + E_T_avg * i / (i+1); // E_T_avg at i+1
 
         if (fp_ET != NULL)
         {
+            fprintf(fp_ET, "%lf, %i, %f, %f\n", E_T_avg, N_survivers, (100. * (double)N_survivers) / (double)N_sprinters, E_T);
             fprintf(fp_ET, "%lf, %i, %f, %f\n", E_T_avg, N_survivers, (100. * (double)N_survivers) / (double)N_sprinters, E_T);
         }
         N_sprinters = N_survivers;
@@ -299,11 +332,18 @@ DMC(
     results.E_T_avg = E_T_avg;
     results.N_sprinters = N_sprinters;
     results.R = walkmen_pos;
+    results.E_T = E_T;
+    results.E_T_avg = E_T_avg;
+    results.N_sprinters = N_sprinters;
+    results.R = walkmen_pos;
 
+    return results;
     return results;
 }
 
 void
+init_walkmen_1D(
+             double **walkers, 
 init_walkmen_1D(
              double **walkers, 
              int N_walkers
@@ -311,7 +351,9 @@ init_walkmen_1D(
 {
     int j = 0;
     for (double i = -5; i < 5; i+=10./N_walkers)
+    for (double i = -5; i < 5; i+=10./N_walkers)
     {
+        walkers[j][0] = i;
         walkers[j][0] = i;
         j+=1;
     }
@@ -346,6 +388,9 @@ double
 morse(
       double x
      )
+morse(
+      double x
+     )
 {
     double V = 0.5 * pow((1  - exp(-x)),2);
     
@@ -357,8 +402,12 @@ weight(
        double dtau, 
        double E_T, 
        double V
+       double E_T, 
+       double V
       )
 {   
+    double W = exp((E_T - V) * dtau);
+
     double W = exp((E_T - V) * dtau);
 
     return W;
@@ -517,6 +566,203 @@ drift_velocity(
     R[3] += v_F2[0] * dtau;
     R[4] += v_F2[1] * dtau;
     R[5] += v_F2[2] * dtau;
+}
+
+double local_energy(
+                    double *R,
+                    double alpha
+                   )
+{
+    double r_1 = R[0];
+    double theta_1 = R[1];
+    double phi_1 = R[2];
+    double r_2 = R[3];
+    double theta_2 = R[4];
+    double phi_2 = R[5];
+
+    double x_1 = r_1 * sin(theta_1) * cos(phi_1);
+    double y_1 = r_1 * sin(theta_1) * sin(phi_1);
+    double z_1 = r_1 * cos(theta_1);
+
+    double x_2 = r_2 * sin(theta_2) * cos(phi_2);
+    double y_2 = r_2 * sin(theta_2) * sin(phi_2);
+    double z_2 = r_2 * cos(theta_2);
+
+    double r_12 = sqrt(pow(x_2 - x_1, 2) + pow(y_2 - y_1, 2) + pow(z_2 - z_1, 2));
+
+    double r1_mag = sqrt(pow(x_1, 2) + pow(y_1, 2) + pow(z_1, 2));
+    double r2_mag = sqrt(pow(x_2, 2) + pow(y_2, 2) + pow(z_2, 2));
+
+    double r1_hat_x = x_1 / r1_mag;
+    double r1_hat_y = y_1 / r1_mag;
+    double r1_hat_z = z_1 / r1_mag;
+
+    double r2_hat_x = x_2 / r2_mag;
+    double r2_hat_y = y_2 / r2_mag;
+    double r2_hat_z = z_2 / r2_mag;
+
+    double delta_hat_x = r2_hat_x - r1_hat_x;
+    double delta_hat_y = r2_hat_y - r1_hat_y;
+    double delta_hat_z = r2_hat_z - r1_hat_z;
+
+    double delta_x = x_2 - x_1;
+    double delta_y = y_2 - y_1;
+    double delta_z = z_2 - z_1;
+
+    double energy_dot = delta_hat_x * delta_x + delta_hat_y * delta_y + delta_hat_z * delta_z;
+
+    double E_L = - 4 + energy_dot / (r_12 * pow(1 + alpha * r_12, 2)) - 1 / (r_12 * pow(1 + alpha * r_12, 3)) - 1 / (4 * pow(1 + alpha * r1_mag, 4)) + 1 / r_12;
+
+    return E_L;
+}
+
+void
+update_positions(
+                 double **walkmen_pos,
+                 double **walkmen_pos_new,
+                 int N_survivers,
+                 int ndim,
+                 double dtau,
+                 FILE *fp_w,
+                 gsl_rng *U,
+                 bool IS,
+                 int decomp
+                )
+{
+    for (int l = 0; l < N_survivers; l++)
+    {
+        for (int n = 0; n < ndim; n++)
+        {   
+            if (IS)
+            {   
+                walkmen_pos[l][n] = walkmen_pos_new[l][n] + gsl_ran_gaussian(U, 1.) * sqrt(dtau);
+            }
+            else
+            {
+                walkmen_pos[l][n] = walkmen_pos_new[l][n] + gsl_ran_gaussian(U, 1.) * sqrt(dtau);
+            }
+            if (fp_w != NULL)
+            {   
+                if (ndim == 1)
+                {
+                    fprintf(fp_w, "%lf\n", walkmen_pos[l][0]);
+                }
+                else
+                {   
+                    if (n < ndim - 1)
+                    {
+                        fprintf(fp_w, "%lf, ", walkmen_pos[l][n]);
+                    }
+                    else
+                    {
+                        fprintf(fp_w, "%lf\n", walkmen_pos[l][n]);
+                    }
+                }
+            }
+        }
+        drift_velocity(walkmen_pos[l], 0.15, dtau, decomp);
+    }  
+}
+
+void
+drift_velocity(
+                double *R,
+                double alpha,
+                double dtau,
+                int decomp
+              )
+{
+    double r_1 = R[0];
+    double theta_1 = R[1];
+    double phi_1 = R[2];
+    double r_2 = R[3];
+    double theta_2 = R[4];
+    double phi_2 = R[5];
+
+    double x_1 = r_1 * sin(theta_1) * cos(phi_1);
+    double y_1 = r_1 * sin(theta_1) * sin(phi_1);
+    double z_1 = r_1 * cos(theta_1);
+
+    double x_2 = r_2 * sin(theta_2) * cos(phi_2);
+    double y_2 = r_2 * sin(theta_2) * sin(phi_2);
+    double z_2 = r_2 * cos(theta_2);
+
+    double r12_vec[3] = {x_2 - x_1, y_2 - y_1, z_2 - z_1};
+    double r12 = sqrt(pow(x_2 - x_1, 2) + pow(y_2 - y_1, 2) + pow(z_2 - z_1, 2));
+
+    double r1_hat[3] = {x_1 / r_1, y_1 / r_1, z_1 / r_1};
+    double r2_hat[3] = {x_2 / r_2, y_2 / r_2, z_2 / r_2};
+    double r12_hat[3] = {r12_vec[0] / r12, r12_vec[1] / r12, r12_vec[2] / r12};
+
+    // Compute drift velocity for the first electron
+    double v_F1[3];
+    double v_F2[3];
+    for (int i = 0; i < 3; i++) {
+        v_F1[i] = -2 * r1_hat[i] - (1.0 / (2 * pow(1 + alpha * r12, 2))) * r12_hat[i];
+        v_F2[i] = -2 * r2_hat[i] + (1.0 / (2 * pow(1 + alpha * r12, 2))) * r12_hat[i];
+    }
+
+    // Update positions with drift
+    for (int i = 0; i < 3; i++)
+    {
+        if (decomp == 1)
+        {   
+            x_1 += v_F1[i] * dtau;
+            y_1 += v_F1[i] * dtau;
+            z_1 += v_F1[i] * dtau;
+            x_2 += v_F2[i] * dtau;
+            y_2 += v_F2[i] * dtau;
+            z_2 += v_F2[i] * dtau;
+        }
+        else if (decomp == 2)
+        {
+            x_1 += v_F1[i] * dtau / 2;
+            y_1 += v_F1[i] * dtau / 2;
+            z_1 += v_F1[i] * dtau / 2;
+            x_2 += v_F2[i] * dtau / 2;
+            y_2 += v_F2[i] * dtau / 2;
+            z_2 += v_F2[i] * dtau / 2; 
+        }
+    }
+
+    if (decomp == 2)
+    {   
+        double r_1 = sqrt(pow(x_1, 2) + pow(y_1, 2) + pow(z_1, 2));
+        double r_2 = sqrt(pow(x_2, 2) + pow(y_2, 2) + pow(z_2, 2));
+
+        double r12_vec[3] = {x_2 - x_1, y_2 - y_1, z_2 - z_1};
+        double r12 = sqrt(pow(x_2 - x_1, 2) + pow(y_2 - y_1, 2) + pow(z_2 - z_1, 2));
+
+        double r1_hat[3] = {x_1 / r_1, y_1 / r_1, z_1 / r_1};
+        double r2_hat[3] = {x_2 / r_2, y_2 / r_2, z_2 / r_2};
+        double r12_hat[3] = {r12_vec[0] / r12, r12_vec[1] / r12, r12_vec[2] / r12};
+
+        // Compute drift velocity for the first electron
+        double v_F1[3];
+        double v_F2[3];
+        for (int i = 0; i < 3; i++) {
+            v_F1[i] = -2 * r1_hat[i] - (1.0 / (2 * pow(1 + alpha * r12, 2))) * r12_hat[i];
+            v_F2[i] = -2 * r2_hat[i] + (1.0 / (2 * pow(1 + alpha * r12, 2))) * r12_hat[i];
+        }
+
+        for (int i = 0; i < 3; i++)
+        {
+            x_1 += v_F1[i] * dtau;
+            y_1 += v_F1[i] * dtau;
+            z_1 += v_F1[i] * dtau;
+            x_2 += v_F2[i] * dtau;
+            y_2 += v_F2[i] * dtau;
+            z_2 += v_F2[i] * dtau; 
+        }
+    }
+
+    // Update the positions
+    R[0] = sqrt(pow(x_1, 2) + pow(y_1, 2) + pow(z_1, 2));
+    R[1] = acos(z_1 / R[0]);
+    R[2] = atan2(y_1, x_1);
+    R[3] = sqrt(pow(x_2, 2) + pow(y_2, 2) + pow(z_2, 2));
+    R[4] = acos(z_2 / R[3]);
+    R[5] = atan2(y_2, x_2);
 }
 
 gsl_rng *
