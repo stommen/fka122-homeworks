@@ -16,12 +16,10 @@ typedef struct
 
 
 DMC_results DMC(
-                double **walkmen_pos,
                 int N_its,
                 int N_0,
                 int N_sprinters,
                 double dtau,
-                double tau,
                 double E_T_start,
                 gsl_rng *U,
                 double gamma,
@@ -35,12 +33,6 @@ DMC_results DMC(
 double morse(
              double x
             );
-
-void wavef_ground_state_analytic(
-                             double *psi, 
-                             double *x, 
-                             int n
-                            );
 
 double weight(
               double dtau, 
@@ -70,7 +62,6 @@ double local_energy(
 
 void update_positions(
                       double **walkmen_pos,
-                      double **walkmen_pos_new,
                       int N_survivers,
                       int ndim,
                       double dtau,
@@ -84,7 +75,8 @@ void drift_velocity(
                     double *R,
                     double alpha,
                     double dtau,
-                    int decomp
+                    int decomp,
+                    gsl_rng *U
                    );
 
 int
@@ -110,13 +102,15 @@ run(
     // double **walkmen_pos = create_2D_array(N_0 * 100, 1);
     // init_walkmen_1D(walkmen_pos, N_0);
 
-    // results = DMC(walkmen_pos, its_eq, N_0, dtau, tau, E_T_start, U, gamma, NULL, NULL, 1, false, 1);
+    // results = DMC(walkmen_pos, its_eq, N_0, N_0+1, dtau, E_T_start, U, gamma, NULL, NULL, 1, false, 1);
     // E_T_start = results.E_T;
+    // int N_sprinters = results.N_sprinters;
 
     // FILE* fp_ET = fopen("data/task_1/1D/ET_Nwalk_non_eq.csv", "w");
+    // fprintf(fp_ET, "E_T_avg, N_sprinters, N_survived/N_sprinters (%%), E_T\n");
     // FILE* fp_w = fopen("data/task_1/1D/I_was_walkin_in_morse.csv", "w");
 
-    // DMC(walkmen_pos, N_its, N_0, dtau, tau, E_T_start, U, gamma, fp_ET, fp_w, 1, false, 1);
+    // DMC(walkmen_pos, N_its, N_0, N_sprinters, dtau, E_T_start, U, gamma, fp_ET, fp_w, 1, false, 1);
 
     // free(walkmen_pos);
     // fclose(fp_ET);
@@ -124,85 +118,85 @@ run(
 
     // --------------------------------- Task 1b --------------------------------- //
     int N_0 = 1000;
-    int N_sprinters = N_0;
+    int N_sprinters_init = N_0;
     double dtau = 0.01;
-    double tau = 1000;
+    double tau = 5000;
     int N_its = tau / dtau;
-    double E_T_start = -3;
+    double E_T_start_init = -3;
     int its_eq = 100 / dtau;
 
-    double **walkmen_pos = create_2D_array(N_0 * 100, 6);
-    init_walkmen_6D(walkmen_pos, N_0, U);
+    // double **walkmen_pos_init = create_2D_array(N_0 * 10, 6);
+    // init_walkmen_6D(walkmen_pos_init, N_0, U);
 
-    results = DMC(walkmen_pos, its_eq, N_0, N_0, dtau, tau, E_T_start, U, gamma, NULL, NULL, 6, false, 1);
-    E_T_start = results.E_T;
-    N_sprinters = results.N_sprinters;
+    // results = DMC(walkmen_pos_init, its_eq, N_0, N_sprinters_init, dtau, E_T_start_init, U, gamma, NULL, NULL, 6, false, 1);
+    // double E_T_start = results.E_T;
+    // int N_sprinters = results.N_sprinters;
 
-    // FILE* fp_ET = fopen("data/task_1/6D/ET_Nwalk_non_eq.csv", "w");
-    // FILE* fp_w = fopen("data/task_1/6D/I_was_walkin_in_morse.csv", "w");
+    // sprintf(filename, "data/task_1/6D/ET_Nwalk_non_eq.csv");
+    // FILE* fp_ET = fopen(filename, "w");
+    // fprintf(fp_ET, "E_T_avg, N_sprinters, N_survived/N_sprinters (%%), E_T\n");
+    // // FILE* fp_w = fopen("data/task_1/6D/I_was_walkin_in_morse.csv", "w");
 
-    results = DMC(walkmen_pos, N_its, N_0, N_sprinters, dtau, tau, E_T_start, U, gamma, NULL, NULL, 6, false, 1);
+    // results = DMC(walkmen_pos_init, N_its, N_0, N_sprinters, dtau, E_T_start, U, gamma, fp_ET, NULL, 6, false, 1);
 
     // fclose(fp_ET);
-    // fclose(fp_w);
+    // // fclose(fp_w);
 
     // --------------------------------- Task 2a --------------------------------- //
-    E_T_start = results.E_T;
-    N_sprinters = results.N_sprinters;
-    double **walkmen_pos_init = results.R;
-    dtau = 0.3;
+    dtau = 0.1;
     its_eq = 1000 / dtau;
-    int decomp = 1;
+    int decomp = 2;
     N_its = 50000;
 
-    results = DMC(walkmen_pos, its_eq, N_0, N_sprinters, dtau, tau, E_T_start, U, gamma, NULL, NULL, 6, true, decomp);
-    E_T_start = results.E_T;
-    N_sprinters = results.N_sprinters;
-    walkmen_pos = results.R;
+    // results = DMC(its_eq, N_0, N_sprinters_init, dtau, E_T_start_init, U, gamma, NULL, NULL, 6, true, decomp);
+    // double E_T_start = results.E_T;
+    // int N_sprinters = results.N_sprinters;
+    
+    // sprintf(filename, "data/task_2/ET_Nwalk_non_eq_decomp_%i_dtau_%f.csv", decomp, dtau);
+    // FILE *fp_ET_IS = fopen(filename, "w");
+    // fprintf(fp_ET_IS, "E_T_avg, N_sprinters, N_survived/N_sprinters (%%), E_T\n");
 
-    sprintf(filename, "data/task_2/ET_Nwalk_non_eq_decomp_%i_dtau_%f.csv", decomp, dtau);
-    FILE *fp_ET_IS = fopen(filename, "w");
-    // FILE* fp_w_IS = fopen("data/task_2/6D/I_was_walkin_in_morse.csv", "w");
+    // sprintf(filename, "data/task_2/I_was_walkin_in_morse_decomp_%i_dtau_%f.csv", decomp, dtau);
+    // FILE* fp_w_IS = fopen(filename, "w");
 
-    results = DMC(walkmen_pos, N_its, N_0, N_sprinters, dtau, tau, E_T_start, U, gamma, fp_ET_IS, NULL, 6, true, decomp);
+    // results = DMC(N_its, N_0, N_sprinters, dtau, E_T_start, U, gamma, fp_ET_IS, fp_w_IS, 6, true, decomp);
+
+    // fclose(fp_ET_IS);
+    // fclose(fp_w_IS);
 
     // --------------------------------- Task 2b --------------------------------- //
-    // double dtaus[6] = {0.01, 0.05, 0.1, 0.2, 0.3, 0.4};
-    // decomp = 1;
+    double dtaus[10] = {0.01, 0.05, 0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4};
+    decomp = 1;
 
-    // sprintf(filename, "data/task_2/ET_Nwalks_%i.csv", decomp);
-    // FILE *fp_ET_IS = fopen(filename, "w");
+    sprintf(filename, "data/task_2/ET_Nwalks_%i.csv", decomp);
+    FILE *fp_ET_IS = fopen(filename, "w");
+    fprintf(fp_ET_IS, "dtau, E_T_avg\n");
 
-    // for (int i = 0; i < 6; i++)
-    // {   
-    //     dtau = dtaus[i];
-    //     printf("dtau: %f\n", dtau);
-    //     results = DMC(walkmen_pos_init, its_eq, N_0, N_sprinters, dtau, tau, E_T_start, U, gamma, NULL, NULL, 6, true, decomp);
-    //     E_T_start = results.E_T;
-    //     N_sprinters = results.N_sprinters;
-    //     walkmen_pos = results.R;
+    for (int i = 0; i < 10; i++)
+    {   
+        dtau = dtaus[i];
+        printf("dtau: %f\n", dtau);
 
-    //     results = DMC(walkmen_pos, N_its, N_0, N_sprinters, dtau, tau, E_T_start, U, gamma, NULL, NULL, 6, true, decomp);
+        results = DMC(its_eq, N_0, N_sprinters_init, dtau, E_T_start_init, U, gamma, NULL, NULL, 6, true, decomp);
+        double E_T_start = results.E_T;
+        int N_sprinters = results.N_sprinters;
 
-    //     fprintf(fp_ET_IS, "%f, %f\n", dtau, results.E_T_avg);
-    // }
+        results = DMC(N_its, N_0, N_sprinters, dtau, E_T_start, U, gamma, NULL, NULL, 6, true, decomp);
+        fprintf(fp_ET_IS, "%f, %f\n", dtau, results.E_T_avg);
+        printf("E_T_avg: %f\n", results.E_T_avg);
+    }
 
-    free(walkmen_pos_init);
-    free(walkmen_pos);
     fclose(fp_ET_IS);
-    // fclose(fp_w_IS);
     
     return 0;
 }
 
 DMC_results
 DMC(
-    double **walkmen_pos,
     int N_its,
     int N_0,
     int N_sprinters,
     double dtau,
-    double tau,
     double E_T_start,
     gsl_rng *U,
     double gamma,
@@ -216,9 +210,21 @@ DMC(
     double E_T = E_T_start;
     double E_T_avg = E_T_start;
     DMC_results results;
-
-    for(int i = 0; i < N_its ; i++)
+    int N_survivers = N_sprinters;
+    double **walkmen_pos = create_2D_array(N_sprinters, ndim);
+    if (ndim == 1)
+    {
+        init_walkmen_1D(walkmen_pos, N_sprinters);
+    }
+    else
+    {
+        init_walkmen_6D(walkmen_pos, N_sprinters, U);
+    }
+    for (int i = 0; i < N_its ; i++)
     {   
+        // Generate new positions
+        update_positions(walkmen_pos, N_survivers, ndim, dtau, fp_w, U, IS, decomp);
+
         int *num_walkers = (int *)calloc(N_sprinters, sizeof(int));
         for(int j = 0; j < N_sprinters; j++)
         {   
@@ -238,19 +244,17 @@ DMC(
                 }
                 else
                 {
-                    double r_1 = walkmen_pos[j][0];
-                    double r_2 = walkmen_pos[j][3];
-                    double r_12 = sqrt(pow(r_1, 2) + pow(r_2, 2) - 2 * r_1 * r_2 * (sin(walkmen_pos[j][1]) * sin(walkmen_pos[j][4]) * cos(walkmen_pos[j][2] - walkmen_pos[j][5]) + cos(walkmen_pos[j][1]) * cos(walkmen_pos[j][4])));
-                    double V_tot = - 2 / sqrt(pow(r_1, 2) + 1e-1) - 2 / sqrt(pow(r_2, 2) + 1e-1) + 1 / sqrt(pow(r_12, 2) + 1e-1);
+                    double r_1 = sqrt(pow(walkmen_pos[j][0], 2) + pow(walkmen_pos[j][1], 2) + pow(walkmen_pos[j][2], 2));
+                    double r_2 = sqrt(pow(walkmen_pos[j][3], 2) + pow(walkmen_pos[j][4], 2) + pow(walkmen_pos[j][5], 2));
+                    double r_12 = sqrt(pow(walkmen_pos[j][3] - walkmen_pos[j][0], 2) + pow(walkmen_pos[j][4] - walkmen_pos[j][1], 2) + pow(walkmen_pos[j][5] - walkmen_pos[j][2], 2));
+                    double V_tot = - 2 / sqrt(pow(r_1, 2) + 1e-4) - 2 / sqrt(pow(r_2, 2) + 1e-4) + 1 / sqrt(pow(r_12, 2) + 1e-4);
                     int m = (int)(weight(dtau, E_T, V_tot) + gsl_rng_uniform(U) * 1.);
                     num_walkers[j] = m;
                 }
             }
         }
         // Number of surviving walkers
-        int N_survivers = int_sum(num_walkers, N_sprinters);
-
-        // Giving birth to new walkers 
+        N_survivers = int_sum(num_walkers, N_sprinters);
         double **walkmen_pos_new = create_2D_array(N_survivers, ndim);
 
         // Index for the new array
@@ -268,9 +272,15 @@ DMC(
                 M++; // Increment the new array index
             }
         }
-
-        // Generate new positions
-        update_positions(walkmen_pos, walkmen_pos_new, N_survivers, ndim, dtau, fp_w, U, IS, decomp);
+        destroy_2D_array(walkmen_pos);
+        walkmen_pos = create_2D_array(N_survivers, ndim);
+        for (int k = 0; k < N_survivers; k++)
+        {
+            for (int n = 0; n < ndim; n++)
+            {
+                walkmen_pos[k][n] = walkmen_pos_new[k][n]; // Update the walker's position
+            }
+        }
 
         // Updating ET
         double sprinter_ratio = (double)N_survivers / (double)N_0;
@@ -281,7 +291,6 @@ DMC(
         {
             fprintf(fp_ET, "%lf, %i, %f, %f\n", E_T_avg, N_survivers, (100. * (double)N_survivers) / (double)N_sprinters, E_T);
         }
-        
         N_sprinters = N_survivers;
         destroy_2D_array(walkmen_pos_new);
         free(num_walkers);
@@ -317,12 +326,19 @@ init_walkmen_6D(
 {
     for(int i = 0; i < N_walkers; i++)
     {
-        walkers[i][0] = 0.7 + gsl_rng_uniform(U); // r_1
-        walkers[i][1] = acos(2 * gsl_rng_uniform(U) - 1); // theta_1
-        walkers[i][2] = 2 * M_PI * gsl_rng_uniform(U); // phi_1
-        walkers[i][3] = 0.7 + gsl_rng_uniform(U); // r_2
-        walkers[i][4] = acos(2 * gsl_rng_uniform(U) - 1); // theta_2
-        walkers[i][5] = 2 * M_PI * gsl_rng_uniform(U); // phi_2
+        double r_1 = 0.7 + gsl_rng_uniform(U);
+        double theta_1 = acos(2 * gsl_rng_uniform(U) - 1);
+        double phi_1 = 2 * M_PI * gsl_rng_uniform(U);
+        double r_2 = 0.7 + gsl_rng_uniform(U);
+        double theta_2 = acos(2 * gsl_rng_uniform(U) - 1);
+        double phi_2 = 2 * M_PI * gsl_rng_uniform(U);
+
+        walkers[i][0] = r_1 * sin(theta_1) * cos(phi_1); // x_1
+        walkers[i][1] = r_1 * sin(theta_1) * sin(phi_1); // y_1
+        walkers[i][2] = r_1 * cos(theta_1); // z_1
+        walkers[i][3] = r_2 * sin(theta_2) * cos(phi_2); // x_2
+        walkers[i][4] = r_2 * sin(theta_2) * sin(phi_2); // y_2
+        walkers[i][5] = r_2 * cos(theta_2); // z_2
     }
 }
 
@@ -348,38 +364,17 @@ weight(
     return W;
 }
 
-void
-wavef_ground_state_analytic(
-                        double *psi, 
-                        double *x, 
-                        int n
-                       )
-{
-    for(int i = 0;i < n; i++)
-    {
-        psi[i] = sqrt(2.) * exp(-exp(-x[i]) - x[i]/2.);
-    }
-}
-
 double local_energy(
                     double *R,
                     double alpha
                    )
 {
-    double r_1 = R[0];
-    double theta_1 = R[1];
-    double phi_1 = R[2];
-    double r_2 = R[3];
-    double theta_2 = R[4];
-    double phi_2 = R[5];
-
-    double x_1 = r_1 * sin(theta_1) * cos(phi_1);
-    double y_1 = r_1 * sin(theta_1) * sin(phi_1);
-    double z_1 = r_1 * cos(theta_1);
-
-    double x_2 = r_2 * sin(theta_2) * cos(phi_2);
-    double y_2 = r_2 * sin(theta_2) * sin(phi_2);
-    double z_2 = r_2 * cos(theta_2);
+    double x_1 = R[0];
+    double y_1 = R[1];
+    double z_1 = R[2];
+    double x_2 = R[3];
+    double y_2 = R[4];
+    double z_2 = R[5];
 
     double r_12 = sqrt(pow(x_2 - x_1, 2) + pow(y_2 - y_1, 2) + pow(z_2 - z_1, 2));
 
@@ -412,7 +407,6 @@ double local_energy(
 void
 update_positions(
                  double **walkmen_pos,
-                 double **walkmen_pos_new,
                  int N_survivers,
                  int ndim,
                  double dtau,
@@ -426,16 +420,16 @@ update_positions(
     {
         for (int n = 0; n < ndim; n++)
         {   
-            if (IS)
-            {   
-                walkmen_pos[l][n] = walkmen_pos_new[l][n] + gsl_ran_gaussian(U, 1.) * sqrt(dtau);
-            }
-            else
+            walkmen_pos[l][n] = walkmen_pos[l][n] + gsl_ran_gaussian(U, 1.) * sqrt(dtau);
+        }
+        if (IS)
+        {      
+            drift_velocity(walkmen_pos[l], 0.15, dtau, decomp, U);
+        }
+        if (fp_w != NULL)
+        {   
+            for (int n = 0; n < ndim; n++)
             {
-                walkmen_pos[l][n] = walkmen_pos_new[l][n] + gsl_ran_gaussian(U, 1.) * sqrt(dtau);
-            }
-            if (fp_w != NULL)
-            {   
                 if (ndim == 1)
                 {
                     fprintf(fp_w, "%lf\n", walkmen_pos[l][0]);
@@ -453,7 +447,6 @@ update_positions(
                 }
             }
         }
-        drift_velocity(walkmen_pos[l], 0.15, dtau, decomp);
     }  
 }
 
@@ -462,23 +455,19 @@ drift_velocity(
                 double *R,
                 double alpha,
                 double dtau,
-                int decomp
+                int decomp,
+                gsl_rng *U
               )
 {
-    double r_1 = R[0];
-    double theta_1 = R[1];
-    double phi_1 = R[2];
-    double r_2 = R[3];
-    double theta_2 = R[4];
-    double phi_2 = R[5];
+    double x_1 = R[0];
+    double y_1 = R[1];
+    double z_1 = R[2];
+    double x_2 = R[3];
+    double y_2 = R[4];
+    double z_2 = R[5];
 
-    double x_1 = r_1 * sin(theta_1) * cos(phi_1);
-    double y_1 = r_1 * sin(theta_1) * sin(phi_1);
-    double z_1 = r_1 * cos(theta_1);
-
-    double x_2 = r_2 * sin(theta_2) * cos(phi_2);
-    double y_2 = r_2 * sin(theta_2) * sin(phi_2);
-    double z_2 = r_2 * cos(theta_2);
+    double r_1 = sqrt(pow(x_1, 2) + pow(y_1, 2) + pow(z_1, 2));
+    double r_2 = sqrt(pow(x_2, 2) + pow(y_2, 2) + pow(z_2, 2));
 
     double r12_vec[3] = {x_2 - x_1, y_2 - y_1, z_2 - z_1};
     double r12 = sqrt(pow(x_2 - x_1, 2) + pow(y_2 - y_1, 2) + pow(z_2 - z_1, 2));
@@ -490,36 +479,21 @@ drift_velocity(
     // Compute drift velocity for the first electron
     double v_F1[3];
     double v_F2[3];
-    for (int i = 0; i < 3; i++) {
-        v_F1[i] = -2 * r1_hat[i] - (1.0 / (2 * pow(1 + alpha * r12, 2))) * r12_hat[i];
-        v_F2[i] = -2 * r2_hat[i] + (1.0 / (2 * pow(1 + alpha * r12, 2))) * r12_hat[i];
-    }
-
-    // Update positions with drift
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 3; i++) 
     {
-        if (decomp == 1)
-        {   
-            x_1 += v_F1[i] * dtau;
-            y_1 += v_F1[i] * dtau;
-            z_1 += v_F1[i] * dtau;
-            x_2 += v_F2[i] * dtau;
-            y_2 += v_F2[i] * dtau;
-            z_2 += v_F2[i] * dtau;
-        }
-        else if (decomp == 2)
-        {
-            x_1 += v_F1[i] * dtau / 2;
-            y_1 += v_F1[i] * dtau / 2;
-            z_1 += v_F1[i] * dtau / 2;
-            x_2 += v_F2[i] * dtau / 2;
-            y_2 += v_F2[i] * dtau / 2;
-            z_2 += v_F2[i] * dtau / 2; 
-        }
+        v_F1[i] = - 2 * r1_hat[i] - (1.0 / (2. * pow(1 + alpha * r12, 2))) * r12_hat[i];
+        v_F2[i] = - 2 * r2_hat[i] + (1.0 / (2. * pow(1 + alpha * r12, 2))) * r12_hat[i];
     }
 
     if (decomp == 2)
     {   
+        x_1 += v_F1[0] * dtau / 2;
+        y_1 += v_F1[1] * dtau / 2;
+        z_1 += v_F1[2] * dtau / 2;
+        x_2 += v_F2[0] * dtau / 2;
+        y_2 += v_F2[1] * dtau / 2;
+        z_2 += v_F2[2] * dtau / 2;
+
         double r_1 = sqrt(pow(x_1, 2) + pow(y_1, 2) + pow(z_1, 2));
         double r_2 = sqrt(pow(x_2, 2) + pow(y_2, 2) + pow(z_2, 2));
 
@@ -530,32 +504,19 @@ drift_velocity(
         double r2_hat[3] = {x_2 / r_2, y_2 / r_2, z_2 / r_2};
         double r12_hat[3] = {r12_vec[0] / r12, r12_vec[1] / r12, r12_vec[2] / r12};
 
-        // Compute drift velocity for the first electron
-        double v_F1[3];
-        double v_F2[3];
-        for (int i = 0; i < 3; i++) {
-            v_F1[i] = -2 * r1_hat[i] - (1.0 / (2 * pow(1 + alpha * r12, 2))) * r12_hat[i];
-            v_F2[i] = -2 * r2_hat[i] + (1.0 / (2 * pow(1 + alpha * r12, 2))) * r12_hat[i];
-        }
-
         for (int i = 0; i < 3; i++)
         {
-            x_1 += v_F1[i] * dtau;
-            y_1 += v_F1[i] * dtau;
-            z_1 += v_F1[i] * dtau;
-            x_2 += v_F2[i] * dtau;
-            y_2 += v_F2[i] * dtau;
-            z_2 += v_F2[i] * dtau; 
+            v_F1[i] = -2 * r1_hat[i] - (1.0 / (2. * pow(1 + alpha * r12, 2))) * r12_hat[i];
+            v_F2[i] = -2 * r2_hat[i] + (1.0 / (2. * pow(1 + alpha * r12, 2))) * r12_hat[i];
         }
     }
 
-    // Update the positions
-    R[0] = sqrt(pow(x_1, 2) + pow(y_1, 2) + pow(z_1, 2));
-    R[1] = acos(z_1 / R[0]);
-    R[2] = atan2(y_1, x_1);
-    R[3] = sqrt(pow(x_2, 2) + pow(y_2, 2) + pow(z_2, 2));
-    R[4] = acos(z_2 / R[3]);
-    R[5] = atan2(y_2, x_2);
+    R[0] += v_F1[0] * dtau;
+    R[1] += v_F1[1] * dtau;
+    R[2] += v_F1[2] * dtau;
+    R[3] += v_F2[0] * dtau;
+    R[4] += v_F2[1] * dtau;
+    R[5] += v_F2[2] * dtau;
 }
 
 gsl_rng *
